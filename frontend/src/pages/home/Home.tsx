@@ -1,13 +1,13 @@
 import HeroSection from "./HeroSection";
-import ExploreSection from "./ExploreSection";
+import HotToursSection from "./HotToursSection";
 import FeaturedDestinations from "./FeaturedDestinations";
 import BlogSection from "./BlogSection";
 
 export default function Home() {
   return (
-    <div className="max-w-7xl mx-auto px-6 py-8">
+    <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
       <HeroSection />
-      <ExploreSection />
+      <HotToursSection />
       <FeaturedDestinations />
       <BlogSection />
     </div>

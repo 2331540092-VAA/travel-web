@@ -1,15 +1,26 @@
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Navbar from "./Navbar";
+import { API_BASE } from "../../service/api";
 
 export default function Header() {
   const [user, setUser] = useState<any>(null);
+  const [avatarVersion, setAvatarVersion] = useState(Date.now());
 
   useEffect(() => {
-    const stored = localStorage.getItem("user");
-    if (stored) {
-      setUser(JSON.parse(stored));
-    }
+    const loadUser = () => {
+      const stored = localStorage.getItem("user");
+      if (stored) {
+        setUser(JSON.parse(stored));
+        setAvatarVersion(Date.now());
+      }
+    };
+    
+    loadUser();
+
+    // Listen for custom event when profile updates globally
+    window.addEventListener("userProfileUpdated", loadUser);
+    return () => window.removeEventListener("userProfileUpdated", loadUser);
   }, []);
 
   return (
@@ -30,10 +41,18 @@ export default function Header() {
           {user ? (
             <Link
               to={`/profile/${user.id}`}
-              className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600"
+              className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600 overflow-hidden border-2 border-white hover:border-blue-200 shadow-sm"
               title={user.name}
             >
-              {user.name?.charAt(0).toUpperCase()}
+              <img
+                src={
+                  user.avatar_url
+                    ? `${API_BASE.replace("/api", "/storage")}/${user.avatar_url}?v=${avatarVersion}`
+                    : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=dbeafe&color=2563eb&bold=true`
+                }
+                alt={user.name}
+                className="w-full h-full object-cover"
+              />
             </Link>
           ) : (
             <Link

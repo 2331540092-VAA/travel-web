@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { toast } from "react-hot-toast";
+import { apiPost } from "../../service/api";
 import GoogleLoginButton from "../../components/GoogleLoginButton";
 
 export default function Login() {
@@ -12,7 +14,6 @@ export default function Login() {
 
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
   // Listen for Google OAuth popup callback
   useEffect(() => {
@@ -37,45 +38,24 @@ export default function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
     setLoading(true);
 
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify(form),
-      });
-
-      const data = await res.json();
-
-      // ❌ Login thất bại
-      if (!data.status) {
-        setError(data.message || "Email hoặc mật khẩu không đúng");
-        return;
-      }
-
-      // ❌ Thiếu user
-      if (!data.user || !data.user.id) {
-        setError("Không nhận được thông tin người dùng");
-        return;
-      }
+      const data = await apiPost<any>("/login", form);
 
       // ✅ Thành công
       localStorage.setItem("user", JSON.stringify(data.user));
+      toast.success("Đăng nhập thành công!");
       navigate(`/profile/${data.user.id}`);
-    } catch (err) {
-      setError("Không thể kết nối tới server");
+    } catch (err: any) {
+      toast.error(err.message || "Không thể kết nối tới máy chủ");
     } finally {
       setLoading(false);
     }
   };
 
   const handleGoogleError = (errorMsg: string) => {
-    setError(errorMsg);
+    toast.error(errorMsg);
   };
 
   return (
@@ -119,7 +99,7 @@ export default function Login() {
             </button>
           </div>
 
-          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+
 
           <button
             type="submit"

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { apiGet } from '../service/api';
 
 interface GoogleLoginButtonProps {
     onError?: (error: string) => void;
@@ -12,8 +13,7 @@ export default function GoogleLoginButton({ onError }: GoogleLoginButtonProps) {
 
         try {
             // 1. Get Google OAuth URL from backend
-            const response = await fetch('http://127.0.0.1:8000/api/auth/google');
-            const data = await response.json();
+            const data = await apiGet<any>('/auth/google');
 
             if (!data.status || !data.url) {
                 throw new Error('Không thể lấy URL Google OAuth');

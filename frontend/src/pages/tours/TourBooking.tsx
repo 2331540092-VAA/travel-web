@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { apiGet } from "../../service/api";
+import Loader from "../../components/common/Loader";
 
 export default function TourBooking() {
   const { id } = useParams();
@@ -11,9 +13,9 @@ export default function TourBooking() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetch(`http://127.0.0.1:8000/api/tours/${id}`)
-      .then((res) => res.json())
-      .then(setTour);
+    apiGet<any>(`/tours/${id}`)
+      .then((data) => setTour(data.data ?? data))
+      .catch((err) => console.error(err));
   }, [id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -38,8 +40,7 @@ export default function TourBooking() {
     setLoading(false);
   };
 
-  if (!tour) return <p className="text-center py-20">Loading...</p>;
-
+  if (!tour) return <Loader text="Đang tải thông tin Tour..." />;
   return (
     <div className="max-w-xl mx-auto py-20">
       <h1 className="text-2xl font-bold mb-6">Đặt tour: {tour.name}</h1>

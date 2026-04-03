@@ -8,6 +8,7 @@ export interface UserProfile {
   date_of_birth?: string;
   passport_number?: string;
 
+  country_id?: number;
   country?: {
     id: number;
     name: string;

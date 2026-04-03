@@ -3,10 +3,11 @@ import { Link } from "react-router-dom";
 interface BaseService {
   id: number;
   name: string;
-  image_url: string;
+  image_url?: string;
   rating?: number;
   price_per_night?: number;
   avg_price?: number;
+  discounted_price?: number;
 }
 
 interface Props {
@@ -15,43 +16,57 @@ interface Props {
 }
 
 export default function ServiceCard({ data, type }: Props) {
+  const price = type === "hotel" 
+    ? data.discounted_price || data.price_per_night 
+    : data.discounted_price || data.avg_price;
+
   return (
     <Link to={`/services/${type}/${data.id}`}>
-      <div className="border rounded-xl p-4 hover:shadow transition bg-white">
+      <div className="border rounded-xl overflow-hidden bg-white hover:shadow-lg transition">
+        {/* IMAGE */}
         <img
-          src={data.image_url}
+          src={data.image_url || "https://via.placeholder.com/400x250"}
           alt={data.name}
-          className="h-40 w-full object-cover rounded-lg mb-3"
+          className="h-48 w-full object-cover"
         />
 
-        <h3 className="font-semibold text-lg mb-1">{data.name}</h3>
+        {/* CONTENT */}
+        <div className="p-4 space-y-2">
+          {/* NAME */}
+          <h3 className="font-semibold text-lg line-clamp-2">{data.name}</h3>
 
-        {data.rating && (
-          <div className="text-yellow-500 text-sm mb-1">
-            {"★".repeat(Math.round(data.rating))}
-            <span className="text-gray-400 ml-1">({data.rating})</span>
-          </div>
-        )}
-
-        {type === "hotel" && data.price_per_night && (
-          <p className="text-sm text-gray-600">
-            Giá từ{" "}
-            <span className="font-semibold text-black">
-              {data.price_per_night.toLocaleString()} VND
-            </span>{" "}
-            / đêm
+          {/* TYPE */}
+          <p className="text-sm text-gray-500">
+            {type === "hotel" ? "Khách sạn" : "Nhà hàng"}
           </p>
-        )}
 
-        {type === "restaurant" && data.avg_price && (
-          <p className="text-sm text-gray-600">
-            Giá trung bình{" "}
-            <span className="font-semibold text-black">
-              {data.avg_price.toLocaleString()} VND
-            </span>
-          </p>
-        )}
+          {/* RATING */}
+          {data.rating && (
+            <div className="flex items-center gap-2">
+              <span className="bg-blue-600 text-white text-sm px-2 py-1 rounded">
+                {data.rating}
+              </span>
+              <span className="text-sm text-gray-500">Đánh giá</span>
+            </div>
+          )}
+
+          {/* PRICE */}
+          {price && (
+            <p className="text-red-500 font-semibold">
+              {Number(price).toLocaleString('vi-VN')} VNĐ
+              {type === "hotel" && (
+                <span className="text-sm text-gray-500"> / đêm</span>
+              )}
+            </p>
+          )}
+
+          {/* BUTTON */}
+          <button className="w-full mt-2 bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
+            Xem chi tiết
+          </button>
+        </div>
       </div>
     </Link>
   );
 }
+

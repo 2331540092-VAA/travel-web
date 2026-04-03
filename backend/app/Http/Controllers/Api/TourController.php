@@ -10,14 +10,14 @@ class TourController extends Controller
     public function index()
     {
         return response()->json(
-            Tour::with('schedules')->get()
+            Tour::with(['schedules', 'departures', 'location.country'])->get()
         );
     }
 
     public function show($id)
     {
         return response()->json(
-            Tour::with('schedules')->findOrFail($id)
+            Tour::with(['schedules', 'departures', 'location.country'])->findOrFail($id)
         );
     }
 }

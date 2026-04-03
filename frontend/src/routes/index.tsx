@@ -11,6 +11,9 @@ import Register from "../pages/auth/Register";
 import GoogleCallback from "../pages/auth/GoogleCallback";
 import Profile from "../pages/profile/Profile";
 
+// Blog
+import BlogDetail from "../pages/blog/BlogDetail";
+
 // Explore
 import ExploreList from "../pages/explore/ExploreList";
 import ExploreDetail from "../pages/explore/ExploreDetail";
@@ -18,6 +21,7 @@ import ExploreDetail from "../pages/explore/ExploreDetail";
 // Locations
 import LocationPage from "../pages/locations/LocationPage";
 import LocationDetail from "../pages/locations/LocationDetail";
+import Favorites from "../pages/locations/Favorites";
 
 // Services
 import ServicePage from "../pages/services/ServicePage";
@@ -31,9 +35,7 @@ import Payment from "../pages/tours/Payment";
 import PaymentSuccess from "../pages/tours/PaymentSuccess";
 import BookingHistory from "../pages/bookings/BookingHistory";
 import BookingDetail from "../pages/bookings/BookingDetail";
-
-// 404 Page (nếu có)
-// import NotFound from "../pages/NotFound";
+import StaffScan from "../pages/staff/StaffScan";
 
 function AppRoutes() {
   return (
@@ -42,6 +44,9 @@ function AppRoutes() {
       <Route element={<MainLayout />}>
         <Route path="/" element={<Home />} />
 
+        {/* Blog detail */}
+        <Route path="/blogs/:id" element={<BlogDetail />} />
+
         {/* Explore */}
         <Route path="/explore/:slug" element={<ExploreList />} />
         <Route path="/explore/detail/:id" element={<ExploreDetail />} />
@@ -49,6 +54,7 @@ function AppRoutes() {
         {/* Locations */}
         <Route path="/locations" element={<LocationPage />} />
         <Route path="/locations/:id" element={<LocationDetail />} />
+        <Route path="/favorites" element={<Favorites />} />
 
         {/* Services */}
         <Route path="/services" element={<ServicePage />} />
@@ -63,6 +69,9 @@ function AppRoutes() {
         <Route path="/payment-success" element={<PaymentSuccess />} />
         <Route path="/bookings" element={<BookingHistory />} />
         <Route path="/bookings/:id" element={<BookingDetail />} />
+
+        {/* Staff Tools */}
+        <Route path="/staff/scan" element={<StaffScan />} />
       </Route>
 
       {/* ================= AUTH ================= */}

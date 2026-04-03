@@ -8,8 +8,8 @@ class MediaGallery extends Model
 {
     protected $table = 'media_gallery';
 
-    public $timestamps = false; 
-    // vì bảng chỉ có created_at, KHÔNG có updated_at
+    public $timestamps = false;
+    // Table only has created_at, no updated_at
 
     protected $fillable = [
         'target_type',
@@ -23,4 +23,27 @@ class MediaGallery extends Model
         'is_primary' => 'boolean',
         'created_at' => 'datetime',
     ];
+
+    // ================= POLYMORPHIC ACCESSOR =================
+
+    /**
+     * Get the parent model (Hotel, Tour, Restaurant, etc.)
+     */
+    public function target()
+    {
+        $modelMap = [
+            'hotel'      => Hotel::class,
+            'tour'       => Tour::class,
+            'restaurant' => Restaurant::class,
+            'place'      => Location::class,
+        ];
+
+        $modelClass = $modelMap[$this->target_type] ?? null;
+
+        if ($modelClass) {
+            return $this->belongsTo($modelClass, 'target_id');
+        }
+
+        return null;
+    }
 }

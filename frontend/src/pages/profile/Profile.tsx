@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { toast } from "react-hot-toast";
+import { apiGet, apiPost, API_BASE } from "../../service/api";
 
 import type { UserProfile } from "./types";
 import ProfileSection from "./ProfileSection";
 import ProfileField from "./ProfileField";
+import LocationCard from "../locations/LocationCard";
 
 interface Country {
   id: number;
@@ -28,13 +31,29 @@ export default function Profile() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [favLocations, setFavLocations] = useState<any[]>([]);
+  const [avatarVersion, setAvatarVersion] = useState(Date.now());
 
   // ================= LOAD COUNTRIES =================
   useEffect(() => {
-    fetch('http://127.0.0.1:8000/api/countries')
-      .then((res) => res.json())
+    apiGet<Country[]>('/countries')
       .then((data) => setCountries(data))
       .catch((err) => console.error('Failed to load countries:', err));
+  }, []);
+
+  // ================= LOAD FAVORITES =================
+  useEffect(() => {
+    const favIds: number[] = JSON.parse(
+      localStorage.getItem("favorite_locations") || "[]"
+    );
+    if (favIds.length > 0) {
+      apiGet<any>("/locations")
+        .then((data) => {
+          const list = data.data ?? data;
+          setFavLocations(list.filter((loc: any) => favIds.includes(loc.id)).slice(0, 2));
+        })
+        .catch(console.error);
+    }
   }, []);
 
   // ================= LOAD PROFILE =================
@@ -51,13 +70,7 @@ export default function Profile() {
       return;
     }
 
-    fetch(`http://127.0.0.1:8000/api/users/${id}`, {
-      credentials: "include", // 🔥 BẮT BUỘC
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error();
-        return res.json();
-      })
+    apiGet<UserProfile>(`/users/${id}`)
       .then((data) => {
         setUser(data);
         setForm({
@@ -71,7 +84,6 @@ export default function Profile() {
         });
       })
       .catch(() => {
-        // chỉ logout nếu mất localStorage
         if (!localStorage.getItem("user")) {
           navigate("/login");
         }
@@ -100,48 +112,42 @@ export default function Profile() {
     // Laravel PUT + FormData
     formData.append("_method", "PUT");
 
-    const res = await fetch(
-      `http://127.0.0.1:8000/api/users/${user.id}`,
-      {
-        method: "POST",
-        credentials: "include", // 🔥 BẮT BUỘC
-        body: formData,
-      }
-    );
+    try {
+      const updated = await apiPost<UserProfile>(`/users/${user.id}`, formData, true);
 
-    if (!res.ok) {
-      console.error("Update profile failed");
-      return;
+      setUser(updated);
+      setEdit(false);
+      setAvatarFile(null);
+      setPreview(null);
+
+      setForm({
+        name: updated.name || "",
+        phone: updated.phone || "",
+        passport_number: updated.passport_number || "",
+        date_of_birth: updated.date_of_birth
+          ? updated.date_of_birth.split("T")[0]
+          : "",
+        country_id: updated.country_id ? String(updated.country_id) : "",
+      });
+
+      // 🔥 CẬP NHẬT LOCALSTORAGE
+      localStorage.setItem("user", JSON.stringify(updated));
+      setAvatarVersion(Date.now()); // Force refresh the image by busting browser cache
+      window.dispatchEvent(new Event("userProfileUpdated")); // Notify Header to update
+      toast.success("Cập nhật thông tin thành công!");
+    } catch (error: any) {
+      toast.error(error.message || "Không thể cập nhật thông tin");
     }
-
-    const updated = await res.json();
-
-    setUser(updated);
-    setEdit(false);
-    setAvatarFile(null);
-    setPreview(null);
-
-    setForm({
-      name: updated.name || "",
-      phone: updated.phone || "",
-      passport_number: updated.passport_number || "",
-      date_of_birth: updated.date_of_birth
-        ? updated.date_of_birth.split("T")[0]
-        : "",
-      country_id: updated.country_id ? String(updated.country_id) : "",
-    });
-
-    // 🔥 CẬP NHẬT LOCALSTORAGE
-    localStorage.setItem("user", JSON.stringify(updated));
   };
 
 
   // ================= LOGOUT =================
   const handleLogout = async () => {
-    await fetch("http://127.0.0.1:8000/api/logout", {
-      method: "POST",
-      credentials: "include", // 🔥 BẮT BUỘC
-    });
+    try {
+      await apiPost("/logout", {});
+    } catch (error) {
+      console.error(error);
+    }
 
     localStorage.removeItem("user");
     navigate("/login");
@@ -209,8 +215,8 @@ export default function Profile() {
               src={
                 preview ||
                 (user.avatar_url
-                  ? `http://127.0.0.1:8000/storage/${user.avatar_url}`
-                  : "/avatar-default.png")
+                  ? `${API_BASE.replace("/api", "/storage")}/${user.avatar_url}?v=${avatarVersion}`
+                  : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=0284c7&color=fff&size=200`)
               }
               className="w-32 h-32 mx-auto rounded-full object-cover border-4 border-sky-100"
               alt="Avatar"
@@ -305,6 +311,30 @@ export default function Profile() {
                 onChange={(v) => setForm({ ...form, phone: v })}
               />
             </ProfileSection>
+
+            {/* FAVORITES */}
+            <div className="mt-8 pt-6 border-t border-gray-100">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                ❤️ Favorite Destinations
+              </h3>
+
+              {favLocations.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  {favLocations.map((loc) => (
+                    <LocationCard key={loc.id} location={loc} showHeart={false} />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500 mb-4 text-sm">Bạn chưa có địa điểm yêu thích nào.</p>
+              )}
+
+              <button
+                onClick={() => navigate("/favorites")}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-full font-semibold shadow transition w-full sm:w-auto mt-2"
+              >
+                Xem tất cả mục yêu thích ❤️
+              </button>
+            </div>
 
             {/* ACTIONS */}
             <div className="flex items-center gap-4 mt-8">

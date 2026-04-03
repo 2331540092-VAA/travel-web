@@ -20,7 +20,12 @@ class Booking extends Model
         'total_amount',
         'payment_type',
         'status',
-        'note'
+        'note',
+        'checked_in_at'
+    ];
+
+    protected $casts = [
+        'checked_in_at' => 'datetime',
     ];
 
     public function user()
@@ -34,12 +39,16 @@ class Booking extends Model
     }
     public function hotelRoom()
     {
-        return $this->belongsTo(HotelRoom::class);
+        return $this->belongsTo(HotelRoom::class, 'target_id');
     }
 
     public function restaurantTable()
     {
-        return $this->belongsTo(RestaurantTable::class);
+        return $this->belongsTo(RestaurantTable::class, 'target_id');
     }
     
+    public function tour()
+    {
+        return $this->belongsTo(Tour::class, 'target_id');
+    }
 }

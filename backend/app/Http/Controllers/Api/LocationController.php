@@ -39,6 +39,8 @@ class LocationController extends Controller
             'name' => $location->name,
             'description' => $location->description,
             'address' => $location->address,
+            'lat' => $location->lat,
+            'lng' => $location->lng,
             'country' => $location->country,
 
             // 👇 QUAN TRỌNG

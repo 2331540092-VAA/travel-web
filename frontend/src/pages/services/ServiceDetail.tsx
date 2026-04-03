@@ -1,8 +1,11 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-
+import WeatherWidget from "../../components/common/WeatherWidget";
+import { apiGet } from "../../service/api";
+import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 export default function ServiceDetail() {
   const { id, type } = useParams();
+  const navigate = useNavigate();
   const [service, setService] = useState<any>(null);
   const [items, setItems] = useState<any[]>([]);
 
@@ -10,25 +13,25 @@ export default function ServiceDetail() {
     if (!id || !type) return;
 
     // 1. Lấy thông tin hotel / restaurant
-    fetch(`http://127.0.0.1:8000/api/${type}s/${id}`)
-      .then((res) => res.json())
-      .then(setService);
+    apiGet<any>(`/${type}s/${id}`)
+      .then((data) => setService(data.data ?? data))
+      .catch((err) => console.error(err));
 
     // 2. Lấy phòng hoặc bàn
     let endpoint = "";
 
     if (type === "hotel") {
-      endpoint = `http://127.0.0.1:8000/api/hotels/${id}/rooms`;
+      endpoint = `/hotels/${id}/rooms`;
     }
 
     if (type === "restaurant") {
-      endpoint = `http://127.0.0.1:8000/api/restaurants/${id}/tables`;
+      endpoint = `/restaurants/${id}/tables`;
     }
 
     if (endpoint) {
-      fetch(endpoint)
-        .then((res) => res.json())
-        .then(setItems);
+      apiGet<any>(endpoint)
+        .then((data) => setItems(data.data ?? data))
+        .catch((err) => console.error(err));
     }
   }, [id, type]);
 
@@ -37,16 +40,28 @@ export default function ServiceDetail() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 pb-20">
+    <div className="max-w-6xl mx-auto px-4 pb-20 pt-6">
+      <button
+        onClick={() => navigate(-1)}
+        className="flex items-center gap-2 px-4 py-2 bg-slate-100 rounded-full text-slate-700 text-sm font-medium hover:bg-slate-200 transition-colors shadow-sm mb-6 w-fit"
+      >
+        <ArrowLeftIcon className="w-4 h-4" /> Quay lại
+      </button>
+
       {/* IMAGE */}
       <img
         src={service.image_url}
         alt={service.name}
-        className="w-full h-[420px] object-cover rounded-3xl mb-8"
+        className="w-full h-[420px] object-cover rounded-3xl mb-8 shadow-md"
       />
 
       {/* INFO */}
       <h1 className="text-3xl font-bold mb-2">{service.name}</h1>
+
+      {/* THỜI TIẾT TRỰC TIẾP */}
+      {(service.lat && service.lng) && (
+        <WeatherWidget lat={service.lat} lng={service.lng} />
+      )}
 
       {service.address && (
         <p className="text-gray-500 mb-2">{service.address}</p>
@@ -90,12 +105,15 @@ export default function ServiceDetail() {
 
               {/* RIGHT */}
               <div className="text-right">
-                <p className="text-2xl font-bold mb-3">
-                  {Number(
-                    type === "hotel" ? item.price_per_night : item.price,
-                  ).toLocaleString()}{" "}
-                  VND
-                </p>
+                {type === "hotel" ? (
+                  <p className="text-2xl font-bold mb-3 text-orange-600">
+                    {Number(item.price_per_night).toLocaleString('vi-VN')} VNĐ
+                  </p>
+                ) : (
+                  <p className="text-2xl font-bold mb-3 text-orange-600">
+                    {Number(service.discounted_price || service.avg_price || 0).toLocaleString('vi-VN')} VNĐ
+                  </p>
+                )}
 
                 <Link
                   to={`/services/${type}/${id}/book?item_id=${item.id}`}
