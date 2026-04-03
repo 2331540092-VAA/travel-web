@@ -19,9 +19,12 @@ export default function Navbar() {
 
       {/* Right */}
       <div className="flex items-center gap-4">
-        <button className="p-2 text-gray-500 hover:bg-gray-50 rounded-lg relative">
+        <button 
+          onClick={() => alert("Hiện tại chưa có thông báo mới!")}
+          className="p-2 text-gray-500 hover:bg-gray-50 rounded-lg relative"
+        >
           <Bell size={20} />
-          <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
         </button>
         
         <div className="h-8 w-[1px] bg-gray-100 mx-2"></div>

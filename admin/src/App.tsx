@@ -9,6 +9,10 @@ import HotelForm from "./pages/hotels/HotelForm";
 import TourList from "./pages/tours/TourList";
 import TourForm from "./pages/tours/TourForm";
 import UserList from "./pages/users/UserList";
+import RestaurantList from "./pages/restaurants/RestaurantList";
+import RestaurantForm from "./pages/restaurants/RestaurantForm";
+import BlogList from "./pages/blogs/BlogList";
+import BlogForm from "./pages/blogs/BlogForm";
 
 function App() {
   return (
@@ -40,9 +44,15 @@ function App() {
               
               {/* Placeholder for other pages */}
               <Route path="users" element={<div className="p-8"><h1 className="text-2xl font-bold">Quản lý người dùng</h1><p className="mt-4 text-gray-500 italic">Tính năng đang phát triển...</p></div>} />
-              <Route path="tours" element={<div className="p-8"><h1 className="text-2xl font-bold">Quản lý Tours</h1><p className="mt-4 text-gray-500 italic">Tính năng đang phát triển...</p></div>} />
-              <Route path="restaurants" element={<div className="p-8"><h1 className="text-2xl font-bold">Quản lý Nhà hàng</h1><p className="mt-4 text-gray-500 italic">Tính năng đang phát triển...</p></div>} />
-              <Route path="blogs" element={<div className="p-8"><h1 className="text-2xl font-bold">Quản lý bài viết</h1><p className="mt-4 text-gray-500 italic">Tính năng đang phát triển...</p></div>} />
+              
+              <Route path="restaurants" element={<RestaurantList />} />
+              <Route path="restaurants/create" element={<RestaurantForm />} />
+              <Route path="restaurants/:id/edit" element={<RestaurantForm />} />
+              
+              <Route path="blogs" element={<BlogList />} />
+              <Route path="blogs/create" element={<BlogForm />} />
+              <Route path="blogs/:id/edit" element={<BlogForm />} />
+              
               <Route path="settings" element={<div className="p-8"><h1 className="text-2xl font-bold">Cài đặt</h1><p className="mt-4 text-gray-500 italic">Tính năng đang phát triển...</p></div>} />
             </Route>
           </Route>

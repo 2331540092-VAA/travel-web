@@ -52,7 +52,7 @@ export default function Sidebar() {
             className={({ isActive }) =>
               `flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
                 isActive 
-                  ? "bg-blue-600 text-white shadow-md shadow-blue-100" 
+                  ? "bg-blue-600 text-white shadow-md" 
                   : "text-gray-600 hover:bg-gray-50 hover:text-blue-600"
               }`
             }

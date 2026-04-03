@@ -34,13 +34,13 @@ export default function Dashboard() {
     fetchStats();
   }, []);
 
-  const getIcon = (iconName: string) => {
+  const getIconDetails = (iconName: string) => {
     switch (iconName) {
-      case 'MapPin': return MapPin;
-      case 'Hotel': return Hotel;
-      case 'Utensils': return Utensils;
-      case 'Users': return Users;
-      default: return Calendar;
+      case 'MapPin': return { Icon: MapPin, color: "bg-blue-500" };
+      case 'Hotel': return { Icon: Hotel, color: "bg-emerald-500" };
+      case 'Utensils': return { Icon: Utensils, color: "bg-orange-500" };
+      case 'Users': return { Icon: Users, color: "bg-purple-500" };
+      default: return { Icon: Calendar, color: "bg-gray-500" };
     }
   };
 
@@ -60,7 +60,7 @@ export default function Dashboard() {
           <h1 className="text-2xl font-bold text-gray-800">Chào buổi sáng, Admin! 👋</h1>
           <p className="text-gray-500 mt-1">Đây là những gì đang diễn ra với hệ thống của bạn hôm nay.</p>
         </div>
-        <div className="bg-white px-6 py-3 rounded-2xl border border-blue-100 shadow-sm shadow-blue-50">
+        <div className="bg-white px-6 py-3 rounded-2xl border border-gray-100 shadow-sm">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Tổng Doanh Thu</p>
           <p className="text-xl font-bold text-blue-600">{revenue}</p>
         </div>
@@ -69,11 +69,11 @@ export default function Dashboard() {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat, idx) => {
-          const Icon = getIcon(stat.icon);
+          const { Icon, color } = getIconDetails(stat.icon);
           return (
             <div key={idx} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow group">
               <div className="flex justify-between items-start mb-4">
-                <div className={`${stat.color} p-3 rounded-xl text-white shadow-lg shadow-current/20`}>
+                <div className={`${color} p-3 rounded-xl text-white shadow-md`}>
                   <Icon size={24} />
                 </div>
                 <span className="flex items-center gap-1 text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
