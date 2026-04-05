@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/jpeg/png" href="/logo.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Travel SE Asia</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+
+    <!-- Material Symbols -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet" />
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#13a4ec",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101c22",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#1a262d",
+                    },
+                    fontFamily: {
+                        display: ["Plus Jakarta Sans", "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.25rem",
+                        lg: "0.5rem",
+                        xl: "0.75rem",
+                        full: "9999px",
+                    },
+                },
+            },
+        };
+    </script>
+</head>
+
+<body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+
+    <!-- n8n Chat Widget CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/@n8n/chat/dist/style.css" rel="stylesheet" />
+
+    <!-- Override n8n Chat Colors - Premium Professional Version -->
+    <style>
+        :root {
+            --chat--color-primary: #13a4ec !important;
+            --chat--toggle--background: #13a4ec !important;
+            --chat--header--background: linear-gradient(135deg, #13a4ec 0%, #0891d8 100%) !important;
+            --chat--message--user--background: #13a4ec !important;
+        }
+
+        /* Force input visibility */
+        .n8n-chat .chat-input {
+            display: flex !important;
+            visibility: visible !important;
+            border-top: 1px solid #eee !important;
+        }
+
+        /* Style headers */
+        .n8n-chat .chat-header {
+            padding: 15px 20px !important;
+        }
+
+        /* Hide n8n branding only if it doesn't hide input */
+        .n8n-chat .chat-footer-branding {
+            display: none !important;
+        }
+    </style>
+
+    <!-- n8n Chat Widget Initialization -->
+    <script type="module">
+        import { createChat } from 'https://cdn.jsdelivr.net/npm/@n8n/chat/dist/chat.bundle.es.js';
+
+        createChat({
+            webhookUrl: 'http://localhost:5678/webhook/519846b0-06c8-4273-98a9-caa83d8243db/chat',
+            webhookConfig: {
+                method: 'POST'
+            },
+            initialMessages: [
+                'Xin chào! 👋 Tôi là chuyên viên tư vấn từ Travel SE Asia. Rất vui được hỗ trợ bạn lên kế hoạch cho chuyến đi mơ ước. Bạn đang quan tâm đến tour du lịch hay dịch vụ nào của chúng tôi ạ?'
+            ],
+            i18n: {
+                en: {
+                    title: '✈️ Trợ lý Du lịch SE Asia',
+                    subtitle: 'Chuyên viên tư vấn hành trình 24/7',
+                    inputPlaceholder: 'Nhập yêu cầu tư vấn của bạn...',
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>

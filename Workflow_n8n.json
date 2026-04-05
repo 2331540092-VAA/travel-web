@@ -1,0 +1,581 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "public": true,
+        "mode": "webhook",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "55e7941f-9a40-4b37-84d3-aa8f36193dec",
+      "name": "When chat message received",
+      "webhookId": "77b5c6a2-50ba-439f-9a9b-2c800afe38e8"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "\"Bạn là Chuyên viên Tư vấn Du lịch giàu kinh nghiệm của Travel SE Asia.\n\nGiao thức làm việc:\n\nKhi khách hỏi về Tour, Khách sạn hoặc Nhà hàng, hãy TỰ ĐỘNG tạo câu lệnh SQL để truy vấn các bảng tương ứng (tours, hotels, restaurants).\nQUAN TRỌNG: Luôn sử dụng cột discounted_price để báo giá cuối cùng cho khách hàng. Nếu cột này trống, hãy tính toán dựa trên price (hoặc price_per_night) và discount_percent.\nTrình bày giá theo định dạng tiền tệ Việt Nam (ví dụ: 3.500.000 VNĐ) để khách dễ đọc.\nTuyệt đối không yêu cầu khách cung cấp SQL, không lộ cấu trúc kỹ thuật của hệ thống.\nPhản hồi bằng tiếng Việt thân thiện, nhiệt tình, đúng phong cách chuyên viên tư vấn cao cấp. Không cung cấp hình ảnh nếu không được yêu cầu.\""
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "265b6585-865e-449d-a750-663f4c24da45",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        80,
+        208
+      ],
+      "id": "c1060651-f435-4392-8a40-7b46cfcda065",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "IjlBnvyrcaiHKtZ1",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        224,
+        208
+      ],
+      "id": "a58db0fc-1ad5-4056-8fe8-7c89c9acd3e2",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Execute a SQL query in Postgres",
+        "operation": "executeQuery",
+        "query": "{{ $fromAI(\"query\", \"The SQL query to execute\") }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        384,
+        208
+      ],
+      "id": "7e43f17a-3020-4a65-a438-9181d14a5967",
+      "name": "Execute a SQL query in Postgres",
+      "credentials": {
+        "postgres": {
+          "id": "XdB0YLXJnuk4wTka",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "46f73c36-5a9c-4715-86d7-b79931481e86",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -304,
+        768
+      ],
+      "id": "b71d6c21-e3b5-4158-834c-aa8a05545de8",
+      "name": "Webhook",
+      "webhookId": "46f73c36-5a9c-4715-86d7-b79931481e86"
+    },
+    {
+      "parameters": {
+        "fromEmail": "Travel SE Asia <nameless2k5@gmail.com>",
+        "toEmail": "={{ $json.body.customer_email }}",
+        "subject": "=Xác nhận đặt Tour thành công - Travel SE Asia",
+        "html": "=<!DOCTYPE html>\n<html>\n<body style=\"font-family: Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px;\">\n    <div style=\"background-color: #ffffff; max-width: 600px; margin: 0 auto; border-radius: 10px; overflow: hidden;\">\n        <div style=\"background-color: #f97316; color: #ffffff; padding: 20px; text-align: center;\">\n            <h2 style=\"margin: 0;\">Xác nhận đặt Tour thành công!</h2>\n        </div>\n        <div style=\"padding: 30px; line-height: 1.6; color: #333333;\">\n            <p>Xin chào <strong>{{ $json.body.customer_name }}</strong>,</p>\n            <p>Travel SE Asia xin xác nhận bạn đã đăng ký và thanh toán thành công chuyến hành trình khám phá sắp tới.</p>\n            \n            <table style=\"width: 100%; border-collapse: collapse; margin-top: 20px;\">\n                <tr><th style=\"background-color: #f1f5f9; padding: 10px; text-align: left; width: 40%; border: 1px solid #e2e8f0;\">Tên Tour</th><td style=\"padding: 10px; border: 1px solid #e2e8f0;\">{{ $json.body.service_name }}</td></tr>\n                <tr><th style=\"background-color: #f1f5f9; padding: 10px; text-align: left; border: 1px solid #e2e8f0;\">Mã Booking</th><td style=\"padding: 10px; border: 1px solid #e2e8f0;\">#{{ $json.body.booking_id }}</td></tr>\n                <tr><th style=\"background-color: #f1f5f9; padding: 10px; text-align: left; border: 1px solid #e2e8f0;\">Ngày khởi hành</th><td style=\"padding: 10px; border: 1px solid #e2e8f0;\">{{ $json.body.check_in }}</td></tr>\n                <tr><th style=\"background-color: #f1f5f9; padding: 10px; text-align: left; border: 1px solid #e2e8f0;\">Tổng thanh toán</th><td style=\"padding: 10px; border: 1px solid #e2e8f0;\"><strong style=\"color: #16a34a;\">{{ $json.body.total_amount }} VNĐ</strong></td></tr>\n            </table>\n\n            <div style=\"background-color: #fff7ed; border-left: 4px solid #f97316; padding: 15px; margin-top: 25px;\">\n                <h4 style=\"margin-top: 0; color: #ea580c;\">🎒 Hành trang cần lưu ý:</h4>\n                <ul style=\"margin-bottom: 0; padding-left: 20px;\">\n                    <li>Quý khách nhớ mang theo <b>giày thể thao</b> mềm mại để thoải mái đi bộ khám phá các cung đường nhé.</li>\n                    <li>Nên trang bị sẵn <b>dù che nắng/mưa</b> và đừng quên kem chống nắng.</li>\n                    <li>Hướng dẫn viên sẽ chủ động liên hệ với bạn trước giờ khởi hành 1 ngày.</li>\n                </ul>\n            </div>\n            \n            <p>Chúc bạn có một chuyến đi bùng nổ!</p>\n            <p>Trân trọng,<br><strong>Đội ngũ Travel SE Asia</strong></p>\n        </div>\n    </div>\n</body>\n</html>\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        352,
+        400
+      ],
+      "id": "6e12fd13-d84b-4b6b-badd-cca7611f498a",
+      "name": "Send an Email",
+      "webhookId": "cde725d3-f276-4d55-ae12-fb43a3d1129b",
+      "credentials": {
+        "smtp": {
+          "id": "DwPy7AvEGrpPnCws",
+          "name": "Services Confirmed Mail"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1d8jO3sVlaLJT1EpImn_U-FQsxiTRkXT76exyXWduj88",
+          "mode": "list",
+          "cachedResultName": "Quản lý Booking Travel SE Asia",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1d8jO3sVlaLJT1EpImn_U-FQsxiTRkXT76exyXWduj88/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1d8jO3sVlaLJT1EpImn_U-FQsxiTRkXT76exyXWduj88/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Mã Booking": "={{ $json.body.booking_id }}",
+            "Tên Khách": "={{ $json.body.customer_name }}",
+            "SĐT / Email": "={{ $json.body.customer_email }}",
+            "Tên dịch vụ": "={{ $json.body.service_name }}",
+            "Loại dịch vụ": "={{ $json.body.booking_type }}",
+            "Số lượng": "={{ $json.body.quantity }}",
+            "Check-in": "={{ $json.body.check_in }}",
+            "Check-out": "={{ $json.body.check_out }}",
+            "Tổng tiền": "={{ $json.body.total_amount }}"
+          },
+          "matchingColumns": [
+            "Mã Booking"
+          ],
+          "schema": [
+            {
+              "id": "Mã Booking",
+              "displayName": "Mã Booking",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Tên Khách",
+              "displayName": "Tên Khách",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "SĐT / Email",
+              "displayName": "SĐT / Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Loại dịch vụ",
+              "displayName": "Loại dịch vụ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Tên dịch vụ",
+              "displayName": "Tên dịch vụ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Check-in",
+              "displayName": "Check-in",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Check-out",
+              "displayName": "Check-out",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Số lượng",
+              "displayName": "Số lượng",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Tổng tiền",
+              "displayName": "Tổng tiền",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -16,
+        976
+      ],
+      "id": "ff1f1c0f-4bd9-4f0e-9332-c10009706e50",
+      "name": "Append or update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "mkA7hXJSWqwD4UOs",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "5800654516",
+        "text": "=🎉 TING TING! CÓ KHÁCH ĐẶT TOUR DU LỊCH!\n👉 Dịch vụ: {{ $json.body.booking_type }} - {{ $json.body.service_name }}\n👤 Khách hàng: {{ $json.body.customer_name }}\n📞 Thông tin: {{ $json.body.customer_email }}\n💸 Doanh thu: {{ $json.body.total_amount }} VNĐ\n--------------------------\nMã Hóa đơn: #{{ $json.body.booking_id }}\nVui lòng chuẩn bị để đón/phục vụ khách!",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        352,
+        544
+      ],
+      "id": "c67c3b8f-64d4-4de8-99aa-1dc48d0d244a",
+      "name": "Send a text message",
+      "webhookId": "438bc20b-1c41-4449-b177-fd49e32fe87b",
+      "credentials": {
+        "telegramApi": {
+          "id": "jKm6nJwTLa2HQ76y",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.booking_type }}",
+                    "rightValue": "Tour",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "69d17255-1735-4350-ba62-6dc0d10070fd"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "41be6d7f-5c41-4267-9155-70e2e04c6bf8",
+                    "leftValue": "={{ $json.body.booking_type }}",
+                    "rightValue": "Hotel",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "5e7c2a3d-0203-4532-a77e-ac4e5bb2c242",
+                    "leftValue": "={{ $json.body.booking_type }}",
+                    "rightValue": "Restaurant",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -16,
+        752
+      ],
+      "id": "6b49f9c5-2049-4ea8-9161-e07ab0980686",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "chatId": "5800654516",
+        "text": "=🏨 TING TING! CÓ KHÁCH ĐẶT PHÒNG KHÁCH SẠN!\n👉 Hạng phòng: {{ $json.body.service_name }}\n👤 Khách hàng: {{ $json.body.customer_name }}\n📞 Liên hệ: {{ $json.body.customer_email }}\n📅 Ngày nhận phòng: {{ $json.body.check_in }}\n📅 Ngày trả phòng: {{ $json.body.check_out }}\n💸 Đã thanh toán: {{ $json.body.total_amount }} VNĐ\n--------------------------\nMã Booking: #{{ $json.body.booking_id }}\nVui lòng báo bộ phận Lễ tân dọn phòng và chuẩn bị chìa khóa đón khách!\n",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        352,
+        832
+      ],
+      "id": "70925028-2954-4ea1-aabe-c0765bf17b0b",
+      "name": "Send a text message1",
+      "webhookId": "438bc20b-1c41-4449-b177-fd49e32fe87b",
+      "credentials": {
+        "telegramApi": {
+          "id": "jKm6nJwTLa2HQ76y",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "5800654516",
+        "text": "=🍽️ TING TING! CÓ KHÁCH ĐẶT BÀN NHÀ HÀNG!\n👉 Vị trí/Tên bàn: {{ $json.body.service_name }}\n👤 Khách hàng: {{ $json.body.customer_name }}\n📞 Liên hệ: {{ $json.body.customer_email }}\n📅 Ngày đến tiệc: {{ $json.body.check_in }}\n👥 Khách đi nhóm: {{ $json.body.quantity }} người\n💸 Đã cọc/Thanh toán: {{ $json.body.total_amount }} VNĐ\n--------------------------\nMã Booking: #{{ $json.body.booking_id }}\nVui lòng thông báo ngay cho Bếp trưởng và Quản lý sảnh lên thực đơn!\n",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        352,
+        1120
+      ],
+      "id": "fcf0eaed-1ace-4efd-8e50-b306d52c8305",
+      "name": "Send a text message2",
+      "webhookId": "438bc20b-1c41-4449-b177-fd49e32fe87b",
+      "credentials": {
+        "telegramApi": {
+          "id": "jKm6nJwTLa2HQ76y",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "Travel SE Asia <nameless2k5@gmail.com>",
+        "toEmail": "={{ $json.body.customer_email }}",
+        "subject": "=Xác nhận đặt Khách sạn thành công - Travel SE Asia",
+        "html": "=<!DOCTYPE html>\n<html>\n<body style=\"font-family: Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px;\">\n    <div style=\"background-color: #ffffff; max-width: 600px; margin: 0 auto; border-radius: 10px; overflow: hidden;\">\n        <div style=\"background-color: #2563eb; color: #ffffff; padding: 20px; text-align: center;\">\n            <h2 style=\"margin: 0;\">Xác nhận đặt Phòng Khách Sạn!</h2>\n        </div>\n        <div style=\"padding: 30px; line-height: 1.6; color: #333333;\">\n            <p>Xin chào <strong>{{ $json.body.customer_name }}</strong>,</p>\n            <p>Cảm ơn bạn đã lựa chọn dịch vụ nghỉ dưỡng của chúng tôi. Chúng tôi đã nhận được thanh toán và giữ phòng thành công cho bạn.</p>\n            \n            <table style=\"width: 100%; border-collapse: collapse; margin-top: 20px;\">\n                <tr><th style=\"background-color: #f1f5f9; padding: 10px; text-align: left; width: 40%; border: 1px solid #e2e8f0;\">Hạng Phòng</th><td style=\"padding: 10px; border: 1px solid #e2e8f0;\">{{ $json.body.service_name }}</td></tr>\n                <tr><th style=\"background-color: #f1f5f9; padding: 10px; text-align: left; border: 1px solid #e2e8f0;\">Mã Booking</th><td style=\"padding: 10px; border: 1px solid #e2e8f0;\">#{{ $json.body.booking_id }}</td></tr>\n                <tr><th style=\"background-color: #f1f5f9; padding: 10px; text-align: left; border: 1px solid #e2e8f0;\">Lịch nghỉ dưỡng</th><td style=\"padding: 10px; border: 1px solid #e2e8f0;\">{{ $json.body.check_in }} ➝ {{ $json.body.check_out }}</td></tr>\n                <tr><th style=\"background-color: #f1f5f9; padding: 10px; text-align: left; border: 1px solid #e2e8f0;\">Tổng thanh toán</th><td style=\"padding: 10px; border: 1px solid #e2e8f0;\"><strong style=\"color: #16a34a;\">{{ $json.body.total_amount }} VNĐ</strong></td></tr>\n            </table>\n\n            <div style=\"background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 15px; margin-top: 25px;\">\n                <h4 style=\"margin-top: 0; color: #1d4ed8;\">🔑 Lưu ý nhận phòng (Check-in):</h4>\n                <ul style=\"margin-bottom: 0; padding-left: 20px;\">\n                    <li>Giờ nhận phòng tiêu chuẩn là <b>14:00 chiều</b>. Giờ trả phòng là <b>12:00 trưa</b>.</li>\n                    <li>Vui lòng mang theo <b>CMND/CCCD/Hộ chiếu gốc</b> để Lễ tân tiến hành làm thủ tục.</li>\n                    <li>📍 Bấm vào đây để xem <a href=\"https://maps.google.com/?q=Hà+Nội\" target=\"_blank\" style=\"color: #2563eb; font-weight: bold;\"> Vị trí Bản đồ Google Maps</a> của Khách sạn.</li>\n                </ul>\n            </div>\n            \n            <p>Chúc bạn có một kỳ nghỉ dưỡng tuyệt vời!</p>\n            <p>Trân trọng,<br><strong>Đội ngũ Travel SE Asia</strong></p>\n        </div>\n    </div>\n</body>\n</html>\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        352,
+        688
+      ],
+      "id": "e13e1281-2bbd-4e38-a833-76dffe4acf52",
+      "name": "Send an Email1",
+      "webhookId": "cde725d3-f276-4d55-ae12-fb43a3d1129b",
+      "credentials": {
+        "smtp": {
+          "id": "DwPy7AvEGrpPnCws",
+          "name": "Services Confirmed Mail"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "Travel SE Asia <nameless2k5@gmail.com>",
+        "toEmail": "={{ $json.body.customer_email }}",
+        "subject": "=Xác nhận đặt Bàn Nhà Hàng thành công - Travel SE Asia",
+        "html": "=<!DOCTYPE html>\n<html>\n<body style=\"font-family: Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px;\">\n    <div style=\"background-color: #ffffff; max-width: 600px; margin: 0 auto; border-radius: 10px; overflow: hidden;\">\n        <div style=\"background-color: #ef4444; color: #ffffff; padding: 20px; text-align: center;\">\n            <h2 style=\"margin: 0;\">Xác nhận đặt Bàn Nhà Hàng!</h2>\n        </div>\n        <div style=\"padding: 30px; line-height: 1.6; color: #333333;\">\n            <p>Xin chào <strong>{{ $json.body.customer_name }}</strong>,</p>\n            <p>Rất cám ơn Quý khách đã chọn nhà hàng của chúng tôi làm nơi thưởng thức ẩm thực. Chúng tôi đã nhận được thanh toán và ưu tiên giữ chỗ cho bạn.</p>\n            \n            <table style=\"width: 100%; border-collapse: collapse; margin-top: 20px;\">\n                <tr><th style=\"background-color: #f1f5f9; padding: 10px; text-align: left; width: 40%; border: 1px solid #e2e8f0;\">Vị trí / Loại Bàn</th><td style=\"padding: 10px; border: 1px solid #e2e8f0;\">{{ $json.body.service_name }}</td></tr>\n                <tr><th style=\"background-color: #f1f5f9; padding: 10px; text-align: left; border: 1px solid #e2e8f0;\">Mã Booking</th><td style=\"padding: 10px; border: 1px solid #e2e8f0;\">#{{ $json.body.booking_id }}</td></tr>\n                <tr><th style=\"background-color: #f1f5f9; padding: 10px; text-align: left; border: 1px solid #e2e8f0;\">Ngày đến tiệc</th><td style=\"padding: 10px; border: 1px solid #e2e8f0;\">{{ $json.body.check_in }}</td></tr>\n                <tr><th style=\"background-color: #f1f5f9; padding: 10px; text-align: left; border: 1px solid #e2e8f0;\">Số lượng người</th><td style=\"padding: 10px; border: 1px solid #e2e8f0;\">{{ $json.body.quantity }} người</td></tr>\n                <tr><th style=\"background-color: #f1f5f9; padding: 10px; text-align: left; border: 1px solid #e2e8f0;\">Tổng phí / Đã cọc</th><td style=\"padding: 10px; border: 1px solid #e2e8f0;\"><strong style=\"color: #16a34a;\">{{ $json.body.total_amount }} VNĐ</strong></td></tr>\n            </table>\n\n            <div style=\"background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; margin-top: 25px;\">\n                <h4 style=\"margin-top: 0; color: #b91c1c;\">🍽️ Lưu ý khi đến nhà hàng:</h4>\n                <ul style=\"margin-bottom: 0; padding-left: 20px;\">\n                    <li>Quý khách vui lòng đến <b>đúng giờ hoặc sớm 5 phút</b> để đảm bảo nhà hàng phục vụ món ăn được nóng sốt và ngon miệng nhất.</li>\n                    <li>Trường hợp Quý khách đến trễ quá 30 phút mà không báo trước, nhà hàng xin phép hủy giữ bàn để nhường chỗ cho khách khác.</li>\n                    <li>Nếu có yêu cầu đặc biệt về <b>trang trí tiệc</b> hoặc <b>dị ứng thức ăn</b>, hệ thống sẽ tiếp nhận khi Quý khách ghi chú lúc đặt bàn.</li>\n                </ul>\n            </div>\n            \n            <p>Hân hạnh được đón tiếp và phục vụ Quý khách!</p>\n            <p>Trân trọng,<br><strong>Đội ngũ Quản lí Nhà Hàng - Travel SE Asia</strong></p>\n        </div>\n    </div>\n</body>\n</html>\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        352,
+        976
+      ],
+      "id": "3b4b3efb-aad2-4a28-af4c-336d88f9a486",
+      "name": "Send an Email2",
+      "webhookId": "cde725d3-f276-4d55-ae12-fb43a3d1129b",
+      "credentials": {
+        "smtp": {
+          "id": "DwPy7AvEGrpPnCws",
+          "name": "Services Confirmed Mail"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query in Postgres": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send an Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send an Email1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a text message2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send an Email2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "10fc688c-80ec-4021-932a-e97422236c4b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e0945fd2ad97f7f6afef31ab11ee77c8ac0cf882b54cc2c64a05f51ee4c20c9a"
+  },
+  "id": "PXgBip1w39nnn7gj",
+  "tags": []
+}
