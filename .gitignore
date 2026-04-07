@@ -1,0 +1,42 @@
+# =========================
+# Agent / IDE
+# =========================
+.agent/
+.vscode/
+.idea/
+
+# =========================
+# Environment files
+# =========================
+backend/.env
+frontend/.env
+admin/.env
+
+# =========================
+# Dependencies
+# =========================
+backend/vendor/
+frontend/node_modules/
+admin/node_modules/
+node_modules/
+
+# =========================
+# Build outputs
+# =========================
+frontend/dist/
+admin/dist/
+
+# =========================
+# Laravel storage & cache
+# =========================
+backend/storage/logs/*.log
+backend/storage/framework/cache/data/
+backend/storage/framework/sessions/
+backend/storage/framework/views/
+backend/bootstrap/cache/*.php
+
+# =========================
+# OS files
+# =========================
+Thumbs.db
+.DS_Store
