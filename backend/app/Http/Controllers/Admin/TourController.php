@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Tour;
+use App\Models\TourDepartures;
 use Illuminate\Http\Request;
 
 class TourController extends Controller
@@ -13,7 +14,16 @@ class TourController extends Controller
      */
     public function index()
     {
-        $tours = Tour::with('location')->latest()->get();
+        $tours = Tour::with('location')
+            ->withMin('departures', 'price')
+            ->withMax('departures', 'discount_percent')
+            ->latest()
+            ->get()
+            ->map(function ($tour) {
+                $tour->price = $tour->departures_min_price;
+                $tour->discount_percent = $tour->departures_max_discount_percent;
+                return $tour;
+            });
         return response()->json($tours);
     }
 
@@ -22,7 +32,13 @@ class TourController extends Controller
      */
     public function show($id)
     {
-        $tour = Tour::with('location')->findOrFail($id);
+        $tour = Tour::with('location')
+            ->withMin('departures', 'price')
+            ->withMax('departures', 'discount_percent')
+            ->findOrFail($id);
+
+        $tour->price = $tour->departures_min_price;
+        $tour->discount_percent = $tour->departures_max_discount_percent;
 
         return response()->json($tour);
     }
@@ -43,7 +59,20 @@ class TourController extends Controller
             'image_url' => 'nullable|string'
         ]);
 
+        $price = $validated['price'];
+        $discount = $validated['discount_percent'] ?? 0;
+        unset($validated['price'], $validated['discount_percent']);
+
         $tour = Tour::create($validated);
+
+        // Tạo departure mặc định với giá
+        $tour->departures()->create([
+            'departure_date' => now()->addDays(7)->toDateString(),
+            'capacity' => 20,
+            'price' => $price,
+            'discount_percent' => $discount,
+            'status' => 'available',
+        ]);
 
         return response()->json([
             'message' => 'Tour created successfully',
@@ -69,7 +98,28 @@ class TourController extends Controller
             'image_url' => 'nullable|string'
         ]);
 
+        $price = $validated['price'];
+        $discount = $validated['discount_percent'] ?? 0;
+        unset($validated['price'], $validated['discount_percent']);
+
         $tour->update($validated);
+
+        // Cập nhật giá vào departure (sửa cái rẻ nhất, hoặc tạo mới nếu chưa có)
+        $departure = $tour->departures()->orderBy('price')->first();
+        if ($departure) {
+            $departure->update([
+                'price' => $price,
+                'discount_percent' => $discount,
+            ]);
+        } else {
+            $tour->departures()->create([
+                'departure_date' => now()->addDays(7)->toDateString(),
+                'capacity' => 20,
+                'price' => $price,
+                'discount_percent' => $discount,
+                'status' => 'available',
+            ]);
+        }
 
         return response()->json([
             'message' => 'Tour updated successfully',

@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\Tour;
 use App\Models\HotelRoom;
 use App\Models\RestaurantTable;
+use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 
@@ -143,6 +144,7 @@ class PaymentController extends Controller
 
         // Gửi webhook n8n
         $this->sendN8nWebhook($booking);
+        $this->notifyPaymentSuccess($booking);
 
         return redirect('http://localhost:5173/payment-success?status=success');
     }
@@ -197,12 +199,43 @@ class PaymentController extends Controller
 
             // Gửi webhook n8n
             $this->sendN8nWebhook($booking);
+            $this->notifyPaymentSuccess($booking);
 
             return response()->json(['RspCode' => '00', 'Message' => 'Confirm Success']);
         }
 
         $payment->update(['status' => 'failed']);
         return response()->json(['RspCode' => '00', 'Message' => 'Payment Failed']);
+    }
+
+    /**
+     * Tạo notification khi thanh toán thành công
+     */
+    private function notifyPaymentSuccess(Booking $booking)
+    {
+        try {
+            $typeLabel = ucfirst($booking->booking_type);
+            $amount = number_format($booking->total_amount) . ' VNĐ';
+
+            // Notify user
+            Notification::notifyUser(
+                $booking->user_id,
+                'payment_success',
+                'Thanh toán thành công',
+                "Booking #{$booking->id} ({$typeLabel}) - {$amount} đã được thanh toán thành công!",
+                ['booking_id' => $booking->id]
+            );
+
+            // Notify admin
+            Notification::notifyAdmin(
+                'payment_success',
+                'Thanh toán mới',
+                "Booking #{$booking->id} ({$typeLabel}) - {$amount} thanh toán thành công",
+                ['booking_id' => $booking->id, 'user_id' => $booking->user_id]
+            );
+        } catch (\Exception $e) {
+            \Log::error('Payment notification error: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -343,6 +376,7 @@ class PaymentController extends Controller
                 if ($booking && $booking->status !== 'paid') {
                     $booking->update(['status' => 'paid']);
                     $this->sendN8nWebhook($booking);
+                    $this->notifyPaymentSuccess($booking);
                 }
             }
             return redirect('http://localhost:5173/payment-success?status=success');
@@ -368,6 +402,7 @@ class PaymentController extends Controller
                 if ($booking && $booking->status !== 'paid') {
                     $booking->update(['status' => 'paid']);
                     $this->sendN8nWebhook($booking);
+                    $this->notifyPaymentSuccess($booking);
                 }
             }
         }

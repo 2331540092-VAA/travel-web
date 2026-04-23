@@ -11,6 +11,7 @@ import {
   ChevronDown,
   Info,
 } from "lucide-react";
+import ReviewSection from "../../components/common/ReviewSection";
 
 export default function TourDetail() {
   const { id } = useParams();
@@ -267,6 +268,14 @@ export default function TourDetail() {
                   ))}
               </div>
             </section>
+
+            {/* Đánh giá & Nhận xét */}
+            <ReviewSection
+              type="tour"
+              entityId={Number(id)}
+              rating={tour.rating}
+              reviewsCount={tour.reviews_count}
+            />
           </div>
 
           {/* CỘT PHẢI: BOX ĐẶT TOUR (STICKY) */}

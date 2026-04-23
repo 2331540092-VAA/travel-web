@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import LocationCard from "./LocationCard";
+import { apiGet } from "../../service/api";
 
 export default function Favorites() {
   const navigate = useNavigate();
@@ -10,24 +11,39 @@ export default function Favorites() {
 
   // ================= LOAD FAVORITES =================
   useEffect(() => {
-    const favIds: number[] = JSON.parse(
-      localStorage.getItem("favorite_locations") || "[]",
-    );
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
 
-    if (favIds.length === 0) {
-      setLocations([]);
-      setLoading(false);
-      return;
+    if (user.id) {
+      // Server-side favorites
+      apiGet<any[]>(`/favorites?user_id=${user.id}`)
+        .then((data) => {
+          const locs = data
+            .filter((f: any) => f.type === "location" && f.entity)
+            .map((f: any) => f.entity);
+          setLocations(locs);
+        })
+        .catch(() => setLocations([]))
+        .finally(() => setLoading(false));
+    } else {
+      // Fallback localStorage cho guest
+      const favIds: number[] = JSON.parse(
+        localStorage.getItem("favorite_locations") || "[]",
+      );
+
+      if (favIds.length === 0) {
+        setLocations([]);
+        setLoading(false);
+        return;
+      }
+
+      fetch("http://127.0.0.1:8000/api/locations")
+        .then((res) => res.json())
+        .then((data) => {
+          const favLocations = data.filter((loc: any) => favIds.includes(loc.id));
+          setLocations(favLocations);
+        })
+        .finally(() => setLoading(false));
     }
-
-    fetch("http://127.0.0.1:8000/api/locations")
-      .then((res) => res.json())
-      .then((data) => {
-        // 🔥 lọc ra đúng location đã yêu thích
-        const favLocations = data.filter((loc: any) => favIds.includes(loc.id));
-        setLocations(favLocations);
-      })
-      .finally(() => setLoading(false));
   }, []);
 
   // ================= RENDER =================

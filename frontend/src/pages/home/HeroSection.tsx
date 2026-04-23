@@ -2,9 +2,11 @@ import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { Search, MapPin, Calendar, Users } from "lucide-react";
 import { motion } from "framer-motion";
+import { useTheme } from "../../components/theme/ThemeProvider";
 
 export default function HeroSection() {
   const navigate = useNavigate();
+  const { theme } = useTheme();
   const [location, setLocation] = useState("");
   const [date, setDate] = useState("");
   const [guests, setGuests] = useState("");
@@ -29,7 +31,16 @@ export default function HeroSection() {
       />
 
       {/* Overlay Gradient */}
-      <div className="absolute inset-0 bg-gradient-to-r from-slate-900/80 via-slate-800/50 to-transparent" />
+      <div
+        className="absolute inset-0"
+        style={
+          theme
+            ? { background: `linear-gradient(to right, ${theme.primary_color}cc, ${theme.secondary_color}80, transparent)` }
+            : undefined
+        }
+      >
+        {!theme && <div className="absolute inset-0 bg-gradient-to-r from-slate-900/80 via-slate-800/50 to-transparent" />}
+      </div>
 
       <div className="absolute inset-0 flex flex-col justify-center px-10 md:px-20">
         <motion.div
@@ -43,7 +54,10 @@ export default function HeroSection() {
           </span>
           <h1 className="text-5xl md:text-7xl font-extrabold mb-6 leading-[1.1] tracking-tight">
             Khám phá vẻ đẹp <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+            <span
+              className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500"
+              style={theme ? { backgroundImage: `linear-gradient(to right, ${theme.accent_color}, ${theme.primary_color})` } : undefined}
+            >
               Châu Á đích thực
             </span>
           </h1>
@@ -54,7 +68,15 @@ export default function HeroSection() {
 
           <Link
             to="/tours"
-            className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 px-8 py-4 rounded-full font-bold text-lg transition-all duration-300 shadow-[0_0_40px_rgba(6,182,212,0.4)] hover:shadow-[0_0_60px_rgba(6,182,212,0.6)] hover:-translate-y-1"
+            className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 px-8 py-4 rounded-full font-bold text-lg transition-all duration-300 hover:-translate-y-1"
+            style={
+              theme
+                ? {
+                    backgroundImage: `linear-gradient(to right, ${theme.secondary_color}, ${theme.primary_color})`,
+                    boxShadow: `0 0 40px ${theme.primary_color}66`,
+                  }
+                : undefined
+            }
           >
             Bắt đầu khám phá
             <Search className="w-5 h-5" />

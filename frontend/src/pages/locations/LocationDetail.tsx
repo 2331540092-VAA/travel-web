@@ -186,7 +186,7 @@ export default function LocationDetail() {
       )}
 
       {/* ================= MAP ================= */}
-      <div className="w-full h-[420px] rounded-2xl overflow-hidden mb-10">
+      <div className="w-full h-[420px] rounded-2xl overflow-hidden mb-10 relative z-0">
         <MapContainer center={[lat, lng]} zoom={13} style={{ height: "100%" }}>
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 

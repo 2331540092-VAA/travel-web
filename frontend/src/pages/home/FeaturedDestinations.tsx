@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom"; // Giả định bạn dùng react-router-dom
 import { ArrowRight } from "lucide-react"; // Giả định bạn dùng lucide-react cho icon
 import { motion, AnimatePresence } from "framer-motion";
+import { useTheme } from "../../components/theme/ThemeProvider";
 
 interface Location {
   id: number;
@@ -15,6 +16,7 @@ export default function FeaturedDestinations() {
   const [locations, setLocations] = useState<Location[]>([]);
   const [index, setIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const { theme } = useTheme();
 
   const visibleCount = 4;
 
@@ -58,7 +60,8 @@ export default function FeaturedDestinations() {
         </div>
         <Link
           to="/locations"
-          className="hidden md:flex items-center gap-2 text-blue-600 font-semibold hover:text-blue-700 transition"
+          className="hidden md:flex items-center gap-2 font-semibold transition"
+          style={{ color: theme?.primary_color || '#2563eb' }}
         >
           Xem tất cả <ArrowRight className="w-5 h-5" />
         </Link>
@@ -94,7 +97,10 @@ export default function FeaturedDestinations() {
                 </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-8 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
-                  <p className="text-cyan-400 font-bold mb-1 text-sm tracking-wider uppercase">
+                  <p
+                    className="font-bold mb-1 text-sm tracking-wider uppercase"
+                    style={{ color: theme?.accent_color || '#22d3ee' }}
+                  >
                     {item.country_name || "Destination"}
                   </p>
                   <h3 className="font-extrabold text-white text-2xl mb-2">
@@ -115,7 +121,8 @@ export default function FeaturedDestinations() {
       <div className="mt-8 text-center md:hidden">
         <Link
           to="/locations"
-          className="inline-flex items-center gap-2 text-blue-600 font-semibold"
+          className="inline-flex items-center gap-2 font-semibold"
+          style={{ color: theme?.primary_color || '#2563eb' }}
         >
           Xem tất cả <ArrowRight className="w-4 h-4" />
         </Link>

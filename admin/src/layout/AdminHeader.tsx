@@ -1,24 +1,28 @@
 import { useState, useEffect, useRef } from "react";
-import { Bell, Search, User, MapPin, Hotel, Calendar } from "lucide-react";
-import DashboardService from "../services/DashboardService";
+import { Bell, Search, User, Calendar, Check } from "lucide-react";
+
+const API_URL = "http://localhost:8000/api/admin/notifications";
 
 const AdminHeader = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  const fetchNotifications = async () => {
+    try {
+      const res = await fetch(API_URL);
+      const data = await res.json();
+      setNotifications(data.notifications || []);
+      setUnreadCount(data.unread_count || 0);
+    } catch (err) {
+      console.error("Error fetching notifications:", err);
+    }
+  };
+
   useEffect(() => {
-    const fetchNotifications = async () => {
-      try {
-        const data = await DashboardService.getStats();
-        if (data && data.recent_bookings) {
-          setNotifications(data.recent_bookings);
-        }
-      } catch (err) {
-        console.error("Error fetching notifications:", err);
-      }
-    };
     fetchNotifications();
+    const interval = setInterval(fetchNotifications, 15000); // Poll every 15s
 
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -29,8 +33,19 @@ const AdminHeader = () => {
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, []);
+
+  const handleMarkAllRead = async () => {
+    try {
+      await fetch(`${API_URL}/read-all`, { method: "PATCH" });
+      setUnreadCount(0);
+      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    } catch {}
+  };
 
   const formatDate = (dateString: string) => {
     try {
@@ -73,8 +88,10 @@ const AdminHeader = () => {
             className="p-2 text-gray-500 hover:bg-gray-50 rounded-lg relative transition-colors"
           >
             <Bell size={20} />
-            {notifications.length > 0 && (
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white animate-pulse"></span>
+            {unreadCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 rounded-full border-2 border-white text-[10px] font-bold text-white flex items-center justify-center px-1">
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </span>
             )}
           </button>
 
@@ -83,11 +100,21 @@ const AdminHeader = () => {
             <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50">
               <div className="px-4 py-3 border-b border-gray-50 bg-gray-50/50 flex items-center justify-between">
                 <h3 className="font-bold text-gray-800 text-sm">
-                  Thông báo mới
+                  Thông báo
                 </h3>
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-600">
-                  {notifications.length}
-                </span>
+                <div className="flex items-center gap-2">
+                  {unreadCount > 0 && (
+                    <button
+                      onClick={handleMarkAllRead}
+                      className="text-[11px] text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                    >
+                      <Check size={12} /> Đọc tất cả
+                    </button>
+                  )}
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-600">
+                    {unreadCount}
+                  </span>
+                </div>
               </div>
 
               <div className="max-h-[360px] overflow-y-auto">
@@ -96,41 +123,34 @@ const AdminHeader = () => {
                     {notifications.map((notif: any) => (
                       <div
                         key={notif.id}
-                        className="p-4 hover:bg-gray-50 transition-colors cursor-pointer flex gap-3"
+                        className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer flex gap-3 ${
+                          !notif.is_read ? "bg-blue-50/40" : ""
+                        }`}
                       >
-                        <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 flex-shrink-0">
-                          {notif.booking_type === "tour" ? (
-                            <MapPin size={18} />
-                          ) : (
-                            <Hotel size={18} />
-                          )}
+                        <div
+                          className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                            !notif.is_read
+                              ? "bg-blue-100 text-blue-600"
+                              : "bg-gray-100 text-gray-500"
+                          }`}
+                        >
+                          <Bell size={18} />
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold text-gray-800 truncate">
-                            Đơn đặt{" "}
-                            {notif.booking_type === "tour"
-                              ? "Tour"
-                              : "Khách sạn"}{" "}
-                            mới
+                            {notif.title}
                           </p>
                           <p className="text-xs text-gray-500 mt-1 line-clamp-2">
-                            Khách hàng{" "}
-                            <span className="font-medium text-gray-700">
-                              {notif.user?.name || "Khách vãng lai"}
-                            </span>{" "}
-                            vừa đặt đơn trị giá{" "}
-                            <span className="text-orange-500 font-bold">
-                              {parseInt(notif.total_amount).toLocaleString(
-                                "vi-VN"
-                              )}
-                              đ
-                            </span>
+                            {notif.message}
                           </p>
                           <p className="text-[10px] text-gray-400 mt-2 font-medium flex items-center gap-1">
                             <Calendar size={10} />
                             {formatDate(notif.created_at)}
                           </p>
                         </div>
+                        {!notif.is_read && (
+                          <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                        )}
                       </div>
                     ))}
                   </div>

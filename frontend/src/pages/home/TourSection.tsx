@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, MapPin, Clock, Plane } from "lucide-react";
 import { motion } from "framer-motion";
+import { useTheme } from "../../components/theme/ThemeProvider";
 
 interface Tour {
   id: number;
@@ -17,6 +18,7 @@ interface Tour {
 export default function HotToursSection() {
   const [tours, setTours] = useState<Tour[]>([]);
   const [loading, setLoading] = useState(true);
+  const { theme } = useTheme();
 
   useEffect(() => {
     fetch("http://127.0.0.1:8000/api/tours")
@@ -70,7 +72,10 @@ export default function HotToursSection() {
         <div>
           <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 mb-3 tracking-tight">
             Ưu đãi tour{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500">
+            <span
+              className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500"
+              style={theme ? { backgroundImage: `linear-gradient(to right, ${theme.primary_color}, ${theme.accent_color})` } : undefined}
+            >
               sốc nhất
             </span>
           </h2>
@@ -81,7 +86,8 @@ export default function HotToursSection() {
         </div>
         <Link
           to="/tours"
-          className="hidden md:flex items-center gap-2 text-blue-600 font-semibold hover:text-blue-700 transition"
+          className="hidden md:flex items-center gap-2 font-semibold hover:text-blue-700 transition"
+          style={{ color: theme?.primary_color || undefined }}
         >
           Xem tất cả <ArrowRight className="w-5 h-5" />
         </Link>
@@ -107,6 +113,7 @@ export default function HotToursSection() {
               variants={itemVariants}
               key={tour.id}
               className="group bg-white rounded-[2rem] overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] hover:-translate-y-2 transition-all duration-300 border border-slate-100 flex flex-col"
+              style={theme ? { background: `color-mix(in srgb, ${theme.primary_color} 3%, #ffffff)`, borderColor: `color-mix(in srgb, ${theme.primary_color} 12%, #e2e8f0)` } : undefined}
             >
               <div className="relative h-56 overflow-hidden">
                 <img
@@ -137,15 +144,15 @@ export default function HotToursSection() {
 
                 <div className="grid grid-cols-2 gap-y-3 gap-x-2 text-xs text-slate-500 font-medium mb-8">
                   <span className="flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-blue-500" />
+                    <MapPin className="w-3.5 h-3.5" style={{ color: theme?.primary_color || '#3b82f6' }} />
                     {tour.departure_location || "TP.HCM"}
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-blue-500" />
+                    <Clock className="w-3.5 h-3.5" style={{ color: theme?.primary_color || '#3b82f6' }} />
                     {tour.days || 1} ngày
                   </span>
                   <span className="flex items-center gap-1.5 col-span-2">
-                    <Plane className="w-3.5 h-3.5 text-blue-500" />
+                    <Plane className="w-3.5 h-3.5" style={{ color: theme?.primary_color || '#3b82f6' }} />
                     {tour.transport || "Máy bay / Ô tô"}
                   </span>
                 </div>

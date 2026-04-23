@@ -1,8 +1,20 @@
 import { Link } from "react-router-dom";
+import { useTheme } from "../theme/ThemeProvider";
 
 export default function Footer() {
+  const { theme } = useTheme();
+
   return (
-    <footer className="bg-slate-900 text-slate-300 mt-20 py-16">
+    <footer
+      className="text-slate-300 mt-20 py-16"
+      style={
+        theme
+          ? {
+              background: `linear-gradient(135deg, ${theme.primary_color}dd, ${theme.secondary_color}cc, #0f172a)`,
+            }
+          : { backgroundColor: "#0f172a" }
+      }
+    >
       <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12">
         <div className="col-span-1 md:col-span-2">
           <Link to="/" className="text-2xl font-bold text-white mb-4 block">

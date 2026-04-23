@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { apiGet } from "../../service/api";
 import { ArrowRight, CalendarDays } from "lucide-react";
 import { motion } from "framer-motion";
+import { useTheme } from "../../components/theme/ThemeProvider";
 
 interface Blog {
   id: number;
@@ -14,6 +15,7 @@ interface Blog {
 export default function BlogSection() {
   const [blogs, setBlogs] = useState<Blog[]>([]);
   const [loading, setLoading] = useState(true);
+  const { theme } = useTheme();
 
   useEffect(() => {
     apiGet<Blog[]>("/blogs")
@@ -57,7 +59,8 @@ export default function BlogSection() {
         </h2>
         <Link
           to="/blogs"
-          className="flex items-center gap-1 text-sm font-semibold text-blue-500 hover:text-blue-600 transition"
+          className="flex items-center gap-1 text-sm font-semibold transition"
+          style={{ color: theme?.primary_color || '#3b82f6' }}
         >
           Xem tất cả <ArrowRight className="w-4 h-4" />
         </Link>
@@ -74,7 +77,8 @@ export default function BlogSection() {
           <motion.div variants={itemVariants} key={blog.id}>
             <Link
               to={`/blogs/${blog.id}`}
-              className="group flex flex-col bg-slate-50 rounded-3xl overflow-hidden hover:bg-white hover:shadow-xl transition-all duration-500 border border-transparent hover:border-slate-100"
+              className="group flex flex-col rounded-3xl overflow-hidden hover:shadow-xl transition-all duration-500 border border-transparent hover:border-slate-100"
+              style={{ backgroundColor: theme ? `color-mix(in srgb, ${theme.primary_color} 4%, #f8fafc)` : '#f8fafc' }}
             >
               <div className="relative h-48 overflow-hidden">
                 <img

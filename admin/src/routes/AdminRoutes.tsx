@@ -55,6 +55,17 @@ import BlogEdit from "../pages/blogs/BlogEdit";
 import BookingList from "../pages/bookings/BookingList";
 import BookingDetail from "../pages/bookings/BookingDetail";
 
+// Reviews
+import ReviewList from "../pages/reviews/ReviewList";
+
+// Reports
+import Reports from "../pages/reports/Reports";
+
+// Themes
+import ThemeList from "../pages/themes/ThemeList";
+import ThemeCreate from "../pages/themes/ThemeCreate";
+import ThemeEdit from "../pages/themes/ThemeEdit";
+
 const AdminRoutes = () => {
   return (
     <Routes>
@@ -135,6 +146,17 @@ const AdminRoutes = () => {
         {/* BOOKINGS */}
         <Route path="bookings" element={<BookingList />} />
         <Route path="bookings/:id" element={<BookingDetail />} />
+
+        {/* REVIEWS */}
+        <Route path="reviews" element={<ReviewList />} />
+
+        {/* THEMES */}
+        <Route path="themes" element={<ThemeList />} />
+        <Route path="themes/create" element={<ThemeCreate />} />
+        <Route path="themes/edit/:id" element={<ThemeEdit />} />
+
+        {/* REPORTS */}
+        <Route path="reports" element={<Reports />} />
       </Route>
 
       {/* FALLBACK */}

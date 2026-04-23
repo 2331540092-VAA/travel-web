@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
+use App\Models\Notification;
 use Illuminate\Http\Request;
 
 class BookingController extends Controller
@@ -28,9 +29,27 @@ class BookingController extends Controller
                 'total_amount' => $request->total_amount,
             ]);
 
+            $this->notifyNewBooking($booking);
+
             return response()->json($booking);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Error: ' . $e->getMessage()], 500);
+        }
+    }
+
+    // Tạo notification khi booking mới
+    private function notifyNewBooking(Booking $booking)
+    {
+        try {
+            $typeLabel = ucfirst($booking->booking_type);
+            Notification::notifyAdmin(
+                'booking_new',
+                'Booking mới #' . $booking->id,
+                "Đặt {$typeLabel} mới - " . number_format($booking->total_amount) . ' VNĐ',
+                ['booking_id' => $booking->id, 'type' => $booking->booking_type]
+            );
+        } catch (\Exception $e) {
+            \Log::error('Notification error: ' . $e->getMessage());
         }
     }
 

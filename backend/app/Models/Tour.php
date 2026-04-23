@@ -21,6 +21,9 @@ class Tour extends Model
         'combo_content',
         'image_url',
         'is_active',
+        'rating',
+        'reviews_count',
+        'rating_text',
     ];
 
     public function location()
@@ -36,5 +39,10 @@ class Tour extends Model
     public function departures()
     {
         return $this->hasMany(TourDepartures::class);
+    }
+
+    public function reviews()
+    {
+        return $this->morphMany(Review::class, 'reviewable');
     }
 }

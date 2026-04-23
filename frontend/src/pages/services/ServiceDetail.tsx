@@ -3,6 +3,7 @@ import "leaflet/dist/leaflet.css";
 import { getIconByType } from "../../components/map/mapIcons";
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
+import ReviewSection from "../../components/common/ReviewSection";
 
 export default function ServiceDetail() {
   const { id, type } = useParams();
@@ -249,6 +250,16 @@ export default function ServiceDetail() {
               ))}
             </div>
           </div>
+
+          {/* Đánh giá & Nhận xét */}
+          {type && id && (
+            <ReviewSection
+              type={type as "hotel" | "restaurant"}
+              entityId={Number(id)}
+              rating={service.rating}
+              reviewsCount={service.reviews_count}
+            />
+          )}
         </div>
       </div>
 

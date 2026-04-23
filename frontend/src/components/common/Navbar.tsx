@@ -8,7 +8,7 @@ const menus = [
   { label: "Lịch sử đặt", path: "/bookings" },
 ];
 
-export default function Navbar() {
+export default function Navbar({ themeActive = false }: { themeActive?: boolean }) {
   return (
     <nav className="hidden md:flex gap-8">
       {menus.map((m) => (
@@ -17,7 +17,13 @@ export default function Navbar() {
           to={m.path}
           className={({ isActive }) =>
             `text-sm font-medium ${
-              isActive ? "text-blue-600" : "text-gray-600 hover:text-blue-600"
+              themeActive
+                ? isActive
+                  ? "text-white font-bold"
+                  : "text-white/80 hover:text-white"
+                : isActive
+                  ? "text-blue-600"
+                  : "text-gray-600 hover:text-blue-600"
             }`
           }
         >

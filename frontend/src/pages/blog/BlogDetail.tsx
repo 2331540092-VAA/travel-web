@@ -24,6 +24,21 @@ export default function BlogDetail() {
       .then((res) => {
         // 👉 hỗ trợ cả 2 kiểu: trả thẳng object hoặc { data: object }
         const blogData = res.data ?? res;
+
+        // Fix: nếu content chứa JSON string từ AI, parse lấy phần content HTML
+        if (blogData.content) {
+          try {
+            const parsed = JSON.parse(blogData.content);
+            if (parsed.content) {
+              blogData.title = parsed.title || blogData.title;
+              blogData.content = parsed.content;
+              if (parsed.cover_url) blogData.cover_url = parsed.cover_url;
+            }
+          } catch {
+            // content đã là HTML thuần, giữ nguyên
+          }
+        }
+
         setBlog(blogData);
         setLoading(false);
       })

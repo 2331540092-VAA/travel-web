@@ -37,3 +37,64 @@ body {
   transition-duration: 200ms;
   transition-timing-function: ease-in-out;
 }
+
+/* ========================================
+   THEME SYSTEM - CSS Variable Overrides
+   ======================================== */
+
+:root {
+  --theme-primary: #0284c7;
+  --theme-secondary: #06b6d4;
+  --theme-accent: #0ea5e9;
+}
+
+/* ========================================
+   BODY BACKGROUND - tinted with theme
+   ======================================== */
+body[data-theme] {
+  background-color: color-mix(in srgb, var(--theme-primary) 4%, #ffffff);
+}
+
+/* ========================================
+   THEME-SPECIFIC BODY BACKGROUNDS
+   ======================================== */
+body[data-theme="tet"] {
+  background-image:
+    radial-gradient(circle at 10% 20%, rgba(220,38,38,0.03) 0%, transparent 50%),
+    radial-gradient(circle at 90% 80%, rgba(245,158,11,0.03) 0%, transparent 50%);
+}
+body[data-theme="christmas"] {
+  background-image:
+    radial-gradient(circle at 15% 85%, rgba(22,163,74,0.04) 0%, transparent 50%),
+    radial-gradient(circle at 85% 15%, rgba(220,38,38,0.03) 0%, transparent 50%);
+}
+body[data-theme="halloween"] {
+  background-color: color-mix(in srgb, #ea580c 3%, #fefefe) !important;
+  background-image:
+    radial-gradient(circle at 20% 50%, rgba(124,58,237,0.04) 0%, transparent 50%),
+    radial-gradient(circle at 80% 30%, rgba(234,88,12,0.04) 0%, transparent 50%);
+}
+body[data-theme="valentine"] {
+  background-image:
+    radial-gradient(circle at 30% 70%, rgba(236,72,153,0.04) 0%, transparent 50%),
+    radial-gradient(circle at 70% 30%, rgba(225,29,72,0.03) 0%, transparent 50%);
+}
+body[data-theme="mid_autumn"] {
+  background-image:
+    radial-gradient(circle at 50% 50%, rgba(217,119,6,0.03) 0%, transparent 60%),
+    radial-gradient(circle at 10% 90%, rgba(220,38,38,0.03) 0%, transparent 50%);
+}
+
+/* ========================================
+   THEME BANNER DECORATION
+   ======================================== */
+[data-theme] .theme-banner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 3px solid var(--theme-accent);
+  border-radius: inherit;
+  opacity: 0.3;
+  pointer-events: none;
+  z-index: 1;
+}

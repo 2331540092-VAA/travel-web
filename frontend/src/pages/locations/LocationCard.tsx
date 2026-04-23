@@ -1,33 +1,51 @@
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { apiPost, apiGet } from "../../service/api";
 
 export default function LocationCard({ location }: any) {
   const [liked, setLiked] = useState(false);
 
   useEffect(() => {
-    const favs: number[] = JSON.parse(
-      localStorage.getItem("favorite_locations") || "[]",
-    );
-    setLiked(favs.includes(location.id));
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    if (user.id) {
+      apiGet<any>(`/favorites/check?type=location&id=${location.id}&user_id=${user.id}`)
+        .then((data) => setLiked(data.is_favorite))
+        .catch(() => {});
+    } else {
+      const favs: number[] = JSON.parse(
+        localStorage.getItem("favorite_locations") || "[]",
+      );
+      setLiked(favs.includes(location.id));
+    }
   }, [location.id]);
 
-  const toggleFavorite = (e: React.MouseEvent) => {
-    e.preventDefault(); // chặn Link
+  const toggleFavorite = async (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
 
-    let favs: number[] = JSON.parse(
-      localStorage.getItem("favorite_locations") || "[]",
-    );
-
-    if (favs.includes(location.id)) {
-      favs = favs.filter((id) => id !== location.id);
-      setLiked(false);
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    if (user.id) {
+      try {
+        const data = await apiPost<any>("/favorites/toggle", {
+          type: "location",
+          id: location.id,
+          user_id: user.id,
+        });
+        setLiked(data.is_favorite);
+      } catch {}
     } else {
-      favs.push(location.id);
-      setLiked(true);
+      let favs: number[] = JSON.parse(
+        localStorage.getItem("favorite_locations") || "[]",
+      );
+      if (favs.includes(location.id)) {
+        favs = favs.filter((id) => id !== location.id);
+        setLiked(false);
+      } else {
+        favs.push(location.id);
+        setLiked(true);
+      }
+      localStorage.setItem("favorite_locations", JSON.stringify(favs));
     }
-
-    localStorage.setItem("favorite_locations", JSON.stringify(favs));
   };
 
   return (

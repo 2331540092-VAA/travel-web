@@ -103,7 +103,7 @@ export default function TourList() {
                   <td className="px-5 py-4 text-sm text-gray-500">{tour.location?.name || "—"}</td>
                   <td className="px-5 py-4 text-center text-sm font-medium text-gray-700">{tour.days} ngày</td>
                   <td className="px-5 py-4 text-right text-sm font-medium text-gray-700">
-                    {typeof tour.price === "number" ? `${tour.price.toLocaleString("vi-VN")} VNĐ` : "—"}
+                    {tour.price ? `${Number(tour.price).toLocaleString("vi-VN")} VNĐ` : "—"}
                   </td>
                   <td className="px-5 py-4 text-center">
                     {tour.discount_percent ? (

@@ -22,7 +22,10 @@ use App\Http\Controllers\Api\{
     PaymentController,
     UserMarkerController,
     ProfileController,
-    ServiceBookingController
+    ServiceBookingController,
+    ReviewController,
+    FavoriteController,
+    NotificationController
 };
 
 use App\Http\Controllers\Admin\{
@@ -34,8 +37,14 @@ use App\Http\Controllers\Admin\{
     RestaurantTableController as AdminRestaurantTableController,
     TourController as AdminTourController,
     BlogController as AdminBlogController,
-    TourScheduleController as AdminTourScheduleController
+    TourScheduleController as AdminTourScheduleController,
+    ReviewController as AdminReviewController,
+    NotificationController as AdminNotificationController,
+    ReportController as AdminReportController,
+    ThemeController as AdminThemeController
 };
+
+use App\Http\Controllers\Api\ThemeController;
 
 
 /*
@@ -94,6 +103,25 @@ Route::prefix('admin')->group(function () {
     Route::get('bookings', [App\Http\Controllers\Admin\BookingController::class, 'index']);
     Route::get('bookings/{id}', [App\Http\Controllers\Admin\BookingController::class, 'show']);
     Route::patch('bookings/{id}', [App\Http\Controllers\Admin\BookingController::class, 'update']);
+
+    // REVIEWS
+    Route::get('reviews', [AdminReviewController::class, 'index']);
+    Route::patch('reviews/{id}/approve', [AdminReviewController::class, 'approve']);
+    Route::patch('reviews/{id}/reject', [AdminReviewController::class, 'reject']);
+    Route::delete('reviews/{id}', [AdminReviewController::class, 'destroy']);
+
+    // NOTIFICATIONS
+    Route::get('notifications', [AdminNotificationController::class, 'index']);
+    Route::patch('notifications/{id}/read', [AdminNotificationController::class, 'markRead']);
+    Route::patch('notifications/read-all', [AdminNotificationController::class, 'markAllRead']);
+
+    // REPORTS
+    Route::get('reports/stats', [AdminReportController::class, 'stats']);
+    Route::get('reports/export-pdf', [AdminReportController::class, 'exportPdf']);
+
+    // THEMES
+    Route::apiResource('themes', AdminThemeController::class);
+    Route::patch('themes/{id}/toggle-active', [AdminThemeController::class, 'toggleActive']);
 
 
     /*
@@ -175,6 +203,15 @@ Route::apiResource('tours', TourController::class)
 Route::apiResource('blogs', BlogController::class)
     ->only(['index','show']);
 
+/*
+|--------------------------------------------------------------------------
+| THEMES (PUBLIC)
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/themes/active', [ThemeController::class, 'active']);
+Route::get('/themes', [ThemeController::class, 'index']);
+
 
 /*
 |--------------------------------------------------------------------------
@@ -235,3 +272,37 @@ Route::post('/payment/vnpay-ipn', [PaymentController::class, 'vnpayIpn']);
 Route::post('/payment/momo', [PaymentController::class, 'createMomoPayment']);
 Route::get('/payment/momo-return', [PaymentController::class, 'momoReturn']);
 Route::post('/payment/momo-ipn', [PaymentController::class, 'momoIpn']);
+
+
+/*
+|--------------------------------------------------------------------------
+| REVIEWS
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/reviews', [ReviewController::class, 'index']);
+Route::post('/reviews', [ReviewController::class, 'store']);
+Route::get('/reviews/can-review', [ReviewController::class, 'canReview']);
+
+
+/*
+|--------------------------------------------------------------------------
+| FAVORITES
+|--------------------------------------------------------------------------
+*/
+
+Route::post('/favorites/toggle', [FavoriteController::class, 'toggle']);
+Route::get('/favorites', [FavoriteController::class, 'index']);
+Route::get('/favorites/check', [FavoriteController::class, 'check']);
+Route::get('/favorites/ids', [FavoriteController::class, 'ids']);
+
+
+/*
+|--------------------------------------------------------------------------
+| NOTIFICATIONS (USER)
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/notifications', [NotificationController::class, 'index']);
+Route::patch('/notifications/{id}/read', [NotificationController::class, 'markRead']);
+Route::patch('/notifications/read-all', [NotificationController::class, 'markAllRead']);

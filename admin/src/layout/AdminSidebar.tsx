@@ -8,7 +8,10 @@ import {
   Map,
   FileText,
   CalendarCheck,
+  Star,
+  BarChart3,
   LogOut,
+  Palette,
 } from "lucide-react";
 
 const menuItems = [
@@ -20,6 +23,9 @@ const menuItems = [
   { icon: Map, label: "Tours", path: "/admin/tours" },
   { icon: FileText, label: "Bài viết", path: "/admin/blogs" },
   { icon: CalendarCheck, label: "Đặt chỗ", path: "/admin/bookings" },
+  { icon: Star, label: "Đánh giá", path: "/admin/reviews" },
+  { icon: Palette, label: "Theme chủ đề", path: "/admin/themes" },
+  { icon: BarChart3, label: "Báo cáo", path: "/admin/reports" },
 ];
 
 const AdminSidebar = () => {
