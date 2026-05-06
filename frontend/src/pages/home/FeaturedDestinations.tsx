@@ -21,7 +21,7 @@ export default function FeaturedDestinations() {
   const visibleCount = 4;
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/api/locations")
+    fetch(`${import.meta.env.VITE_API_BASE ? import.meta.env.VITE_API_BASE + '/api' : 'http://127.0.0.1:8000/api'}/locations`)
       .then((res) => res.json())
       .then((data) => setLocations(data));
   }, []);

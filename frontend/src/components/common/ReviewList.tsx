@@ -23,7 +23,7 @@ export default function ReviewList({ reviews }: ReviewListProps) {
     const cleaned = String(url).trim();
     if (!cleaned || cleaned === "null" || cleaned === "undefined") return "";
     if (/^https?:\/\//i.test(cleaned) || cleaned.startsWith("data:")) return cleaned;
-    return `http://127.0.0.1:8000${cleaned.startsWith("/") ? "" : "/"}${cleaned}`;
+    return `${import.meta.env.VITE_API_BASE || 'http://127.0.0.1:8000'}${cleaned.startsWith("/") ? "" : "/"}${cleaned}`;
   };
 
   if (reviews.length === 0) {
