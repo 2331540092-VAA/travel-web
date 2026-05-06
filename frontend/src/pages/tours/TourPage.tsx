@@ -53,7 +53,7 @@ export default function TourPage() {
   const PAGE_SIZE = 10;
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/api/tours")
+    fetch(`${import.meta.env.VITE_API_BASE ? import.meta.env.VITE_API_BASE + '/api' : 'http://127.0.0.1:8000/api'}/tours`)
       .then((res) => res.json())
       .then((data) => setTours(data.data ?? data))
       .finally(() => setLoading(false));

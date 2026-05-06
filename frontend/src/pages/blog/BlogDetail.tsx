@@ -19,7 +19,7 @@ export default function BlogDetail() {
   useEffect(() => {
     if (!id) return;
 
-    fetch(`http://127.0.0.1:8000/api/blogs/${id}`)
+    fetch(`${import.meta.env.VITE_API_BASE ? import.meta.env.VITE_API_BASE + '/api' : 'http://127.0.0.1:8000/api'}/blogs/${id}`)
       .then((res) => res.json())
       .then((res) => {
         // 👉 hỗ trợ cả 2 kiểu: trả thẳng object hoặc { data: object }

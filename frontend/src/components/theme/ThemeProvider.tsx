@@ -31,7 +31,7 @@ export function useTheme() {
   return useContext(ThemeContext);
 }
 
-const API_BASE = "http://127.0.0.1:8000/api";
+const API_BASE = import.meta.env.VITE_API_BASE ? `${import.meta.env.VITE_API_BASE}/api` : "http://127.0.0.1:8000/api";
 
 export default function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<ThemeData | null>(null);

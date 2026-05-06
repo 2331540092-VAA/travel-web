@@ -32,7 +32,7 @@ export default function BookingTour() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetch(`http://127.0.0.1:8000/api/tours/${tourId}`)
+    fetch(`${import.meta.env.VITE_API_BASE ? import.meta.env.VITE_API_BASE + '/api' : 'http://127.0.0.1:8000/api'}/tours/${tourId}`)
       .then((res) => res.json())
       .then((data) => {
         setTour(data);
@@ -70,7 +70,7 @@ export default function BookingTour() {
       checkOutDate.setDate(checkOutDate.getDate() + Math.max(1, (tour.days ?? 1)));
       const checkOut = checkOutDate.toISOString().slice(0, 10);
 
-      const res = await fetch("http://127.0.0.1:8000/api/bookings", {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE ? import.meta.env.VITE_API_BASE + '/api' : 'http://127.0.0.1:8000/api'}/bookings`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

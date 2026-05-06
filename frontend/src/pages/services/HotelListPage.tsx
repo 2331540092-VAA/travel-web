@@ -24,7 +24,7 @@ export default function HotelListPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch("http://127.0.0.1:8000/api/hotels");
+        const res = await fetch(`${import.meta.env.VITE_API_BASE ? import.meta.env.VITE_API_BASE + '/api' : 'http://127.0.0.1:8000/api'}/hotels`);
         const json = await res.json();
         const hotelData = (json.data ?? json).map((item: RawService) => ({
           ...item,

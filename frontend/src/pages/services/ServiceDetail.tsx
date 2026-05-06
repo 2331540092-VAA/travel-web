@@ -57,14 +57,14 @@ export default function ServiceDetail() {
     if (!id || !type) return;
     const fetchData = async () => {
       try {
-        const res = await fetch(`http://127.0.0.1:8000/api/${type}s/${id}`);
+        const res = await fetch(`${import.meta.env.VITE_API_BASE ? import.meta.env.VITE_API_BASE + '/api' : 'http://127.0.0.1:8000/api'}/${type}s/${id}`);
         const data = await res.json();
         setService(data.data ?? data);
 
         let endpoint =
           type === "hotel"
-            ? `http://127.0.0.1:8000/api/hotels/${id}/rooms`
-            : `http://127.0.0.1:8000/api/restaurants/${id}/tables`;
+            ? `${import.meta.env.VITE_API_BASE ? import.meta.env.VITE_API_BASE + '/api' : 'http://127.0.0.1:8000/api'}/hotels/${id}/rooms`
+            : `${import.meta.env.VITE_API_BASE ? import.meta.env.VITE_API_BASE + '/api' : 'http://127.0.0.1:8000/api'}/restaurants/${id}/tables`;
 
         const res2 = await fetch(endpoint);
         const data2 = await res2.json();

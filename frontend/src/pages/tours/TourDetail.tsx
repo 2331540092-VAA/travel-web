@@ -65,7 +65,7 @@ export default function TourDetail() {
   const [openDay, setOpenDay] = useState<number | null>(1);
 
   useEffect(() => {
-    fetch(`http://127.0.0.1:8000/api/tours/${id}`)
+    fetch(`${import.meta.env.VITE_API_BASE ? import.meta.env.VITE_API_BASE + '/api' : 'http://127.0.0.1:8000/api'}/tours/${id}`)
       .then((res) => res.json())
       .then((data) => setTour(data));
   }, [id]);

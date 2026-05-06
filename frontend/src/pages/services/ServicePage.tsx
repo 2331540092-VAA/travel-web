@@ -36,8 +36,8 @@ export default function ServicePage() {
     const fetchData = async () => {
       try {
         const [hotelRes, restaurantRes] = await Promise.all([
-          fetch("http://127.0.0.1:8000/api/hotels"),
-          fetch("http://127.0.0.1:8000/api/restaurants"),
+          fetch(`${import.meta.env.VITE_API_BASE ? import.meta.env.VITE_API_BASE + '/api' : 'http://127.0.0.1:8000/api'}/hotels`),
+          fetch(`${import.meta.env.VITE_API_BASE ? import.meta.env.VITE_API_BASE + '/api' : 'http://127.0.0.1:8000/api'}/restaurants`),
         ]);
 
         const hotelJson = await hotelRes.json();

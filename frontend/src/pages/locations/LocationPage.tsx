@@ -45,11 +45,11 @@ export default function LocationPage() {
 
   /* Load dữ liệu */
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/api/countries")
+    fetch(`${import.meta.env.VITE_API_BASE ? import.meta.env.VITE_API_BASE + '/api' : 'http://127.0.0.1:8000/api'}/countries`)
       .then((res) => res.json())
       .then(setCountries);
 
-    fetch("http://127.0.0.1:8000/api/locations")
+    fetch(`${import.meta.env.VITE_API_BASE ? import.meta.env.VITE_API_BASE + '/api' : 'http://127.0.0.1:8000/api'}/locations`)
       .then((res) => res.json())
       .then(setAllLocations);
   }, []);

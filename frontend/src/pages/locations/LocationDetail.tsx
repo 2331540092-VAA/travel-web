@@ -103,7 +103,7 @@ export default function LocationDetail() {
 
   // Fetch location data
   useEffect(() => {
-    fetch(`http://127.0.0.1:8000/api/locations/${id}`)
+    fetch(`${import.meta.env.VITE_API_BASE ? import.meta.env.VITE_API_BASE + '/api' : 'http://127.0.0.1:8000/api'}/locations/${id}`)
       .then((r) => r.json())
       .then((r) => {
         setData(r);

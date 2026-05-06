@@ -48,9 +48,9 @@ export default function ServiceBooking() {
       // Lấy thông tin dịch vụ (hotel hoặc restaurant)
       let serviceUrl = "";
       if (type === "hotel") {
-        serviceUrl = `http://127.0.0.1:8000/api/hotels/${id}`;
+        serviceUrl = `${import.meta.env.VITE_API_BASE ? import.meta.env.VITE_API_BASE + '/api' : 'http://127.0.0.1:8000/api'}/hotels/${id}`;
       } else if (type === "restaurant") {
-        serviceUrl = `http://127.0.0.1:8000/api/restaurants/${id}`;
+        serviceUrl = `${import.meta.env.VITE_API_BASE ? import.meta.env.VITE_API_BASE + '/api' : 'http://127.0.0.1:8000/api'}/restaurants/${id}`;
       }
       if (serviceUrl) {
         try {
@@ -64,9 +64,9 @@ export default function ServiceBooking() {
       // Lấy giá dịch vụ theo item_id
       let url = "";
       if (type === "hotel" && itemId) {
-        url = `http://127.0.0.1:8000/api/hotels/${id}/rooms`;
+        url = `${import.meta.env.VITE_API_BASE ? import.meta.env.VITE_API_BASE + '/api' : 'http://127.0.0.1:8000/api'}/hotels/${id}/rooms`;
       } else if (type === "restaurant" && itemId) {
-        url = `http://127.0.0.1:8000/api/restaurants/${id}/tables`;
+        url = `${import.meta.env.VITE_API_BASE ? import.meta.env.VITE_API_BASE + '/api' : 'http://127.0.0.1:8000/api'}/restaurants/${id}/tables`;
       }
       if (url) {
         try {
