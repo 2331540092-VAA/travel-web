@@ -5,11 +5,51 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import ReviewSection from "../../components/common/ReviewSection";
 
+interface MenuItem {
+  name: string;
+  price?: number;
+  category?: string;
+  description?: string;
+}
+
+interface ServiceItem {
+  id: number;
+  name: string;
+  capacity?: number;
+  price?: number;
+  price_per_night?: number;
+  discount_percent?: number;
+  quantity?: number;
+  status?: string;
+  note?: string;
+  bed_type?: string;
+  area?: number;
+}
+
+interface ServiceData {
+  id: number;
+  name: string;
+  description?: string;
+  rating?: number;
+  reviews_count?: number;
+  address?: string;
+  image_url?: string;
+  lat?: string | number;
+  lng?: string | number;
+  amenities?: string | string[];
+  menu?: string | MenuItem[];
+  min_price?: number;
+  max_price?: number;
+  price_per_night?: number;
+  is_promotion?: boolean;
+  discount_percent?: number;
+}
+
 export default function ServiceDetail() {
   const { id, type } = useParams();
   const navigate = useNavigate();
-  const [service, setService] = useState<any>(null);
-  const [items, setItems] = useState<any[]>([]);
+  const [service, setService] = useState<ServiceData | null>(null);
+  const [items, setItems] = useState<ServiceItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showMapModal, setShowMapModal] = useState(false);
 
@@ -42,7 +82,7 @@ export default function ServiceDetail() {
     return <p className="text-center py-20">Đang tải...</p>;
 
   let amenities: string[] = [];
-  let menu: any[] = [];
+  let menu: MenuItem[] = [];
   try {
     amenities =
       typeof service.amenities === "string"
@@ -58,7 +98,7 @@ export default function ServiceDetail() {
 
   const lat = Number(service.lat);
   const lng = Number(service.lng);
-  const defaultIcon = getIconByType(type || "location");
+  const markedIcon = getIconByType("marked");
 
   return (
     // 1. THÊM NỀN XANH NHẠT TOÀN TRANG
@@ -92,10 +132,11 @@ export default function ServiceDetail() {
                 scrollWheelZoom={false}
                 zoomControl={false}
                 attributionControl={false}
+                whenReady={() => {}}
               >
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                <Marker position={[lat, lng]} icon={defaultIcon}>
-                  <Popup>{service.name}</Popup>
+                <Marker position={[lat, lng]} icon={markedIcon}>
+                  <Popup>Marked</Popup>
                 </Marker>
               </MapContainer>
             ) : (
@@ -130,7 +171,7 @@ export default function ServiceDetail() {
 
           {/* GIÁ: CHỈNH THEO MẪU ẢNH (Bỏ icon túi tiền) */}
           <div className="mb-10 pb-8 border-b border-slate-100">
-            {service.is_promotion && service.discount_percent > 0 ? (
+            {service.is_promotion && (service.discount_percent ?? 0) > 0 ? (
               <div className="space-y-1">
                 <p className="text-slate-400 line-through text-lg font-medium">
                   {type === "hotel"
@@ -140,8 +181,8 @@ export default function ServiceDetail() {
                 <div className="flex items-center gap-3">
                   <p className="text-3xl font-black text-red-500">
                     {type === "hotel"
-                      ? `${(Number(service.price_per_night) * (1 - service.discount_percent / 100)).toLocaleString()} VND`
-                      : `${(Number(service.min_price) * (1 - service.discount_percent / 100)).toLocaleString()} - ${(Number(service.max_price) * (1 - service.discount_percent / 100)).toLocaleString()} VND`}
+                      ? `${(Number(service.price_per_night) * (1 - (service.discount_percent ?? 0) / 100)).toLocaleString()} VND`
+                      : `${(Number(service.min_price) * (1 - (service.discount_percent ?? 0) / 100)).toLocaleString()} - ${(Number(service.max_price) * (1 - (service.discount_percent ?? 0) / 100)).toLocaleString()} VND`}
                   </p>
                   <span className="bg-red-100 text-red-500 px-2 py-1 rounded-lg text-xs font-bold">
                     -{service.discount_percent}%
@@ -266,21 +307,22 @@ export default function ServiceDetail() {
       {/* Modal Map (Giữ nguyên) */}
       {showMapModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <button
+            className="fixed top-6 right-6 z-[1000] bg-slate-900 text-white px-4 py-2 rounded-xl font-bold shadow-lg border border-white/20 hover:bg-slate-800"
+            onClick={() => setShowMapModal(false)}
+          >
+            Đóng
+          </button>
           <div className="relative bg-white rounded-[2rem] shadow-2xl w-full max-w-4xl h-[70vh] overflow-hidden">
-            <button
-              className="absolute top-4 right-4 z-[60] bg-slate-900 text-white px-4 py-2 rounded-xl font-bold"
-              onClick={() => setShowMapModal(false)}
-            >
-              Đóng
-            </button>
             <MapContainer
               center={[lat, lng]}
               zoom={16}
               style={{ width: "100%", height: "100%" }}
+              whenReady={() => {}}
             >
               <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-              <Marker position={[lat, lng]} icon={defaultIcon}>
-                <Popup>{service.name}</Popup>
+              <Marker position={[lat, lng]} icon={markedIcon}>
+                <Popup>Marked</Popup>
               </Marker>
             </MapContainer>
           </div>

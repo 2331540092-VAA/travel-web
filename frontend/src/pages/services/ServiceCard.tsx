@@ -28,7 +28,7 @@ export default function ServiceCard({ data, type }: Props) {
       className="group block focus:outline-none"
     >
       <div
-        className={`rounded-xl bg-white relative transition-all duration-300 group-hover:shadow-2xl group-hover:-translate-y-1 border border-gray-200 ${
+        className={`border rounded-xl overflow-hidden bg-white relative transition-all duration-300 group-hover:shadow-2xl group-hover:-translate-y-1 ${
           data.is_promotion &&
           data.discount_percent &&
           data.discount_percent > 0
@@ -38,11 +38,11 @@ export default function ServiceCard({ data, type }: Props) {
         style={{ minHeight: 320 }}
       >
         {/* IMAGE + icon overlay */}
-        <div className="relative overflow-hidden rounded-t-xl">
+        <div className="relative">
           <img
             src={data.image_url || "https://via.placeholder.com/400x250"}
             alt={data.name}
-            className="h-48 w-full object-cover transition-all duration-300 group-hover:scale-105"
+            className="h-48 w-full object-cover rounded-t-xl transition-all duration-300 group-hover:scale-105"
           />
           {/* Icon overlay bottom right */}
           <span className="absolute bottom-2 right-2 bg-white/80 rounded-full p-1.5 shadow-md">

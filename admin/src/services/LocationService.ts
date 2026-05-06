@@ -1,4 +1,4 @@
-const API_URL = "http://127.0.0.1:8000/api/locations";
+﻿const API_URL = `${import.meta.env.VITE_API_BASE}/api/admin/locations`;
 
 class LocationService {
   async getLocations() {
@@ -67,3 +67,6 @@ class LocationService {
 }
 
 export default new LocationService();
+
+
+

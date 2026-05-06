@@ -45,8 +45,8 @@ export default function ReviewForm({
       setRating(0);
       setComment("");
       onReviewSubmitted();
-    } catch (err: any) {
-      toast.error(err.message || "Lỗi khi gửi đánh giá");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Lỗi khi gửi đánh giá");
     } finally {
       setSubmitting(false);
     }

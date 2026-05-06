@@ -1,7 +1,13 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import HotelService from "../../services/HotelService";
-import { Hotel as HotelIcon, Plus, Pencil, Trash2, DoorOpen } from "lucide-react";
+import {
+  Hotel as HotelIcon,
+  Plus,
+  Pencil,
+  Trash2,
+  DoorOpen,
+} from "lucide-react";
 
 interface Hotel {
   id: number;
@@ -12,17 +18,21 @@ interface Hotel {
   discount_percent: number | null;
   image_url?: string | null;
   address?: string | null;
-  combo_content?: string | null;
-  description?: string | null;
   location?: { id: number; name: string } | null;
 }
 
 export default function HotelsList() {
   const [hotels, setHotels] = useState<Hotel[]>([]);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
 
-  useEffect(() => { fetchHotels(); }, []);
+  // ✅ search + pagination
+  const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
+
+  useEffect(() => {
+    fetchHotels();
+  }, []);
 
   const fetchHotels = async () => {
     try {
@@ -45,98 +55,210 @@ export default function HotelsList() {
     }
   };
 
-  if (loading) return (
-    <div className="flex items-center justify-center py-20 text-gray-400">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-3"></div>
-      Đang tải...
-    </div>
+  // ✅ FILTER
+  const filteredHotels = hotels.filter((hotel) =>
+    hotel.name.toLowerCase().includes(search.toLowerCase()),
   );
+
+  // ✅ PAGINATION
+  const totalPages = Math.ceil(filteredHotels.length / ITEMS_PER_PAGE);
+
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+
+  const currentData = filteredHotels.slice(
+    startIndex,
+    startIndex + ITEMS_PER_PAGE,
+  );
+
+  if (loading)
+    return (
+      <div className="flex items-center justify-center py-20 text-gray-400">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-3"></div>
+        Đang tải...
+      </div>
+    );
 
   return (
     <div className="space-y-6">
+      {/* HEADER */}
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600">
             <HotelIcon size={22} />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-800">Quản lý Khách sạn</h1>
-            <p className="text-xs text-gray-400">{hotels.length} khách sạn</p>
+            <h1 className="text-xl font-bold text-gray-800">
+              Quản lý Khách sạn
+            </h1>
+            <p className="text-xs text-gray-400">
+              {filteredHotels.length} khách sạn
+            </p>
           </div>
         </div>
-        <Link to="/admin/hotels/create"
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-xl hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm no-underline">
+
+        <Link
+          to="/admin/hotels/create"
+          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-xl hover:bg-blue-700 text-sm font-medium"
+        >
           <Plus size={16} /> Thêm mới
         </Link>
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      {/* SEARCH */}
+      <div className="w-72">
+        <input
+          type="text"
+          placeholder="Tìm khách sạn..."
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setCurrentPage(1);
+          }}
+          className="w-full px-3 py-2 border rounded-lg text-sm"
+        />
+      </div>
+
+      {/* TABLE */}
+      <div className="bg-white overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full table-fixed">
             <thead>
-              <tr className="bg-gray-50/80 text-[11px] uppercase tracking-wider font-semibold text-gray-400">
-                <th className="px-5 py-3.5 text-left">ID</th>
-                <th className="px-5 py-3.5 text-left">Hình ảnh</th>
-                <th className="px-5 py-3.5 text-left">Tên</th>
-                <th className="px-5 py-3.5 text-left">Khu vực</th>
-                <th className="px-5 py-3.5 text-center">Rating</th>
-                <th className="px-5 py-3.5 text-right">Giá/đêm</th>
-                <th className="px-5 py-3.5 text-center">Giảm giá</th>
-                <th className="px-5 py-3.5 text-center">Hành động</th>
+              <tr className="bg-gray-50 text-xs uppercase text-gray-400">
+                <th className="px-5 py-3 text-left">ID</th>
+                <th className="px-5 py-3 text-left">Hình ảnh</th>
+                <th className="px-5 py-3 text-left">Tên</th>
+                <th className="px-5 py-3 text-left">Khu vực</th>
+                <th className="px-5 py-3 text-center">Rating</th>
+                <th className="px-5 py-3 text-right">Giá/đêm</th>
+                <th className="px-5 py-3 text-center">Giảm giá</th>
+                <th className="px-5 py-3 text-center">Hành động</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
-              {hotels.map((hotel) => (
-                <tr key={hotel.id} className="hover:bg-gray-50/50 transition-colors">
-                  <td className="px-5 py-4 text-sm text-gray-500">{hotel.id}</td>
+
+            <tbody>
+              {currentData.map((hotel) => (
+                <tr key={hotel.id} className="border-t hover:bg-gray-50">
+                  <td className="px-5 py-4 text-sm text-gray-500">
+                    {hotel.id}
+                  </td>
+
                   <td className="px-5 py-4">
                     {hotel.image_url ? (
-                      <img src={hotel.image_url} alt={hotel.name} className="w-20 h-14 object-cover rounded-lg" />
+                      <img
+                        src={hotel.image_url}
+                        className="w-20 h-14 object-cover rounded"
+                      />
                     ) : (
-                      <div className="w-20 h-14 bg-gray-100 rounded-lg flex items-center justify-center text-gray-300 text-xs">No img</div>
+                      "No img"
                     )}
                   </td>
+
                   <td className="px-5 py-4">
-                    <p className="text-sm font-semibold text-gray-800">{hotel.name}</p>
-                    <p className="text-[11px] text-gray-400 truncate max-w-[200px]">{hotel.address || ""}</p>
+                    <p className="text-sm font-semibold">{hotel.name}</p>
+                    <p className="text-xs text-gray-400 truncate max-w-50">
+                      {hotel.address && hotel.address.trim() !== ""
+                        ? hotel.address
+                        : "—"}
+                    </p>
                   </td>
-                  <td className="px-5 py-4 text-sm text-gray-500">{hotel.location?.name || "—"}</td>
-                  <td className="px-5 py-4 text-center text-sm">
+
+                  <td className="px-5 py-4 text-sm text-gray-500">
+                    {hotel.location?.name || "—"}
+                  </td>
+
+                  <td className="px-5 py-4 text-center">
                     {hotel.rating ? (
-                      <span className="text-amber-500 font-bold">⭐ {hotel.rating}</span>
-                    ) : <span className="text-gray-300">—</span>}
+                      <span className="text-amber-500 font-bold">
+                        ⭐ {hotel.rating}
+                      </span>
+                    ) : (
+                      "—"
+                    )}
                   </td>
-                  <td className="px-5 py-4 text-right text-sm font-medium text-gray-700">
-                    {hotel.price_per_night?.toLocaleString("vi-VN")} <span className="text-gray-400">VNĐ</span>
+
+                  {/* 💰 FORMAT TIỀN */}
+                  <td className="px-5 py-4 text-right font-medium">
+                    {new Intl.NumberFormat("vi-VN").format(
+                      hotel.price_per_night || 0,
+                    )}{" "}
+                    VNĐ
                   </td>
+
                   <td className="px-5 py-4 text-center">
                     {hotel.discount_percent ? (
-                      <span className="text-[10px] px-2.5 py-1 rounded-full font-bold bg-orange-100 text-orange-600">-{hotel.discount_percent}%</span>
-                    ) : <span className="text-gray-300 text-sm">—</span>}
+                      <span className="text-xs px-2 py-1 bg-orange-100 text-orange-600 rounded-full">
+                        -{hotel.discount_percent}%
+                      </span>
+                    ) : (
+                      "—"
+                    )}
                   </td>
+
                   <td className="px-5 py-4">
-                    <div className="flex justify-center gap-1.5">
-                      <Link to={`/admin/hotels/${hotel.id}/rooms`}
-                        className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Phòng">
+                    <div className="flex justify-center gap-2">
+                      <Link
+                        to={`/admin/hotels/${hotel.id}/rooms`}
+                        className="p-2 hover:text-emerald-600"
+                      >
                         <DoorOpen size={16} />
                       </Link>
-                      <Link to={`/admin/hotels/edit/${hotel.id}`}
-                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Sửa">
+
+                      <Link
+                        to={`/admin/hotels/edit/${hotel.id}`}
+                        className="p-2 hover:text-blue-600"
+                      >
                         <Pencil size={16} />
                       </Link>
-                      <button onClick={() => handleDelete(hotel.id)}
-                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Xóa">
+
+                      <button
+                        onClick={() => handleDelete(hotel.id)}
+                        className="p-2 hover:text-red-600"
+                      >
                         <Trash2 size={16} />
                       </button>
                     </div>
                   </td>
                 </tr>
               ))}
-              {hotels.length === 0 && (
-                <tr><td colSpan={8} className="px-5 py-12 text-center text-gray-400 text-sm">Chưa có khách sạn nào.</td></tr>
+
+              {currentData.length === 0 && (
+                <tr>
+                  <td colSpan={8} className="text-center py-10 text-gray-400">
+                    Không có dữ liệu
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* PAGINATION */}
+        <div className="flex justify-center gap-2 py-4">
+          <button
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage((p) => p - 1)}
+          >
+            Prev
+          </button>
+
+          {[...Array(totalPages)].map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrentPage(i + 1)}
+              className={`px-3 py-1 rounded ${
+                currentPage === i + 1 ? "bg-blue-600 text-white" : ""
+              }`}
+            >
+              {i + 1}
+            </button>
+          ))}
+
+          <button
+            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage((p) => p + 1)}
+          >
+            Next
+          </button>
         </div>
       </div>
     </div>

@@ -24,7 +24,7 @@ const menuItems = [
   { icon: FileText, label: "Bài viết", path: "/admin/blogs" },
   { icon: CalendarCheck, label: "Đặt chỗ", path: "/admin/bookings" },
   { icon: Star, label: "Đánh giá", path: "/admin/reviews" },
-  { icon: Palette, label: "Theme chủ đề", path: "/admin/themes" },
+  // { icon: Palette, label: "Theme chủ đề", path: "/admin/themes" },
   { icon: BarChart3, label: "Báo cáo", path: "/admin/reports" },
 ];
 
@@ -37,13 +37,13 @@ const AdminSidebar = () => {
   };
 
   return (
-    <aside className="w-64 bg-white border-r border-gray-200 flex flex-col flex-shrink-0">
+    <aside className="w-64 bg-white border-r border-gray-200 flex flex-col shrink-0">
       {/* Brand */}
       <div className="p-6 border-b border-gray-100 flex items-center gap-3">
         <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
           T
         </div>
-        <span className="text-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+        <span className="text-lg font-bold bg-linear-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
           Travel Admin
         </span>
       </div>

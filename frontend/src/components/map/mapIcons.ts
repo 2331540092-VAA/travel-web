@@ -12,6 +12,7 @@ const createIcon = (iconUrl: string) =>
   });
 
 export const locationIcon = () => createIcon("/icons/location.png");
+export const markedIcon = () => createIcon("/icons/marked.png");
 export const hotelIcon = () => createIcon("/icons/hotel.png");
 export const restaurantIcon = () => createIcon("/icons/restaurant.png");
 export const userIcon = () => createIcon("/icons/user.png");
@@ -27,6 +28,8 @@ export const getIconByType = (type: string) => {
       return userIcon();
     case "location":
       return locationIcon();
+    case "marked":
+      return markedIcon();
     default:
       return locationIcon();
   }

@@ -38,9 +38,9 @@ export default function GoogleLoginButton({ onError }: GoogleLoginButtonProps) {
           setLoading(false);
         }
       }, 1000);
-    } catch (error: any) {
+    } catch (error: unknown) {
       setLoading(false);
-      const errorMsg = error.message || "Đăng nhập Google thất bại";
+      const errorMsg = error instanceof Error ? error.message : "Đăng nhập Google thất bại";
       onError?.(errorMsg);
     }
   };

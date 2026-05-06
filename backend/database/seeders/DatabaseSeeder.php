@@ -13,13 +13,16 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             UserSeeder::class,
-            CountrySeeder::class,
-            CategorySeeder::class,
-            LocationSeeder::class,
-            ExploreSeeder::class,
+            CountriesSeeder::class,
+            ThemeSeeder::class,
+            LocationsSeeder::class,
             RestaurantSeeder::class,
+            RestaurantTableSeeder::class,
             HotelSeeder::class,
+            HotelRoomSeeder::class,
             TourSeeder::class,
+            TourScheduleSeeder::class,
+            TourDepartureSeeder::class,
             BlogSeeder::class,
             BookingSeeder::class,
         ]);

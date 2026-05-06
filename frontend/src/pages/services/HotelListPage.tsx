@@ -10,6 +10,10 @@ interface Service {
   price_per_night?: number;
 }
 
+interface RawService extends Service {
+  image?: string;
+}
+
 export default function HotelListPage() {
   const navigate = useNavigate();
   const [hotels, setHotels] = useState<Service[]>([]);
@@ -22,7 +26,7 @@ export default function HotelListPage() {
       try {
         const res = await fetch("http://127.0.0.1:8000/api/hotels");
         const json = await res.json();
-        const hotelData = (json.data ?? json).map((item: any) => ({
+        const hotelData = (json.data ?? json).map((item: RawService) => ({
           ...item,
           image_url: item.image_url || item.image || "",
         }));

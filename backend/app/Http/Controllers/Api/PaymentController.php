@@ -7,7 +7,9 @@ use App\Models\Payment;
 use App\Models\Booking;
 use App\Models\User;
 use App\Models\Tour;
+use App\Models\Hotel;
 use App\Models\HotelRoom;
+use App\Models\Restaurant;
 use App\Models\RestaurantTable;
 use App\Models\Notification;
 use Illuminate\Http\Request;
@@ -217,8 +219,14 @@ class PaymentController extends Controller
             $typeLabel = ucfirst($booking->booking_type);
             $amount = number_format($booking->total_amount) . ' VNĐ';
 
+            // Khi đã thanh toán thành công, đánh dấu thông báo "chờ thanh toán" cũ là đã đọc
+            Notification::where('user_id', $booking->user_id)
+                ->where('type', 'booking_success')
+                ->where('data->booking_id', $booking->id)
+                ->update(['is_read' => true]);
+
             // Notify user
-            Notification::notifyUser(
+            Notification::createUserNotification(
                 $booking->user_id,
                 'payment_success',
                 'Thanh toán thành công',
@@ -227,7 +235,7 @@ class PaymentController extends Controller
             );
 
             // Notify admin
-            Notification::notifyAdmin(
+            Notification::createAdminNotification(
                 'payment_success',
                 'Thanh toán mới',
                 "Booking #{$booking->id} ({$typeLabel}) - {$amount} thanh toán thành công",
@@ -255,11 +263,13 @@ class PaymentController extends Controller
                 $tour = Tour::find($booking->target_id);
                 $serviceName = $tour ? $tour->name : '';
             } elseif ($type === 'hotel') {
-                $room = HotelRoom::find($booking->target_id);
-                $serviceName = $room ? $room->name : '';
+                $room = $booking->item_id ? HotelRoom::find($booking->item_id) : null;
+                $hotel = Hotel::find($booking->target_id);
+                $serviceName = ($room ? $room->name . ' - ' : '') . ($hotel ? $hotel->name : '');
             } elseif ($type === 'restaurant') {
-                $table = RestaurantTable::find($booking->target_id);
-                $serviceName = $table ? $table->name : '';
+                $table = $booking->item_id ? RestaurantTable::find($booking->item_id) : null;
+                $restaurant = Restaurant::find($booking->target_id);
+                $serviceName = ($table ? $table->name . ' - ' : '') . ($restaurant ? $restaurant->name : '');
             }
 
             Http::post($webhookUrl, [

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Bell } from "lucide-react";
-import { apiGet, apiPut } from "../../service/api";
+import { Link } from "react-router-dom";
+import { apiGet, apiPatch } from "../../service/api";
 
 interface NotificationItem {
   id: number;
@@ -9,7 +10,7 @@ interface NotificationItem {
   message: string;
   is_read: boolean;
   created_at: string;
-  data?: any;
+  data?: Record<string, unknown>;
 }
 
 export default function NotificationBell() {
@@ -18,20 +19,44 @@ export default function NotificationBell() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  const fetchNotifications = async () => {
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
-    if (!user.id) return;
+  const getCurrentUserId = () => {
     try {
-      const data = await apiGet<any>(`/notifications?user_id=${user.id}`);
+      const user = JSON.parse(localStorage.getItem("user") || "null");
+      return user?.id ? Number(user.id) : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const fetchNotifications = async () => {
+    try {
+      const userId = getCurrentUserId();
+      if (!userId) {
+        setNotifications([]);
+        setUnreadCount(0);
+        return;
+      }
+
+      const data = await apiGet<any>(`/notifications?user_id=${userId}`);
       setNotifications(data.notifications || []);
       setUnreadCount(data.unread_count || 0);
-    } catch {}
+    } catch (err) {
+      console.error("Failed to load user notifications:", err);
+    }
   };
 
   useEffect(() => {
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 30000); // Poll every 30s
-    return () => clearInterval(interval);
+
+    // Lắng nghe event refresh từ các action (hủy booking, v.v.)
+    const handleRefresh = () => fetchNotifications();
+    window.addEventListener("notification:refresh", handleRefresh);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("notification:refresh", handleRefresh);
+    };
   }, []);
 
   useEffect(() => {
@@ -45,19 +70,24 @@ export default function NotificationBell() {
   }, []);
 
   const handleMarkAllRead = async () => {
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
-    if (!user.id) return;
     try {
-      await apiPut("/notifications/read-all", { user_id: user.id });
+      const userId = getCurrentUserId();
+      if (!userId) return;
+
+      await apiPatch("/notifications/read-all", { user_id: userId });
       setUnreadCount(0);
       setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
-    } catch {}
+    } catch (err) {
+      console.error("Failed to mark all notifications as read:", err);
+    }
   };
 
   const typeIcon: Record<string, string> = {
     payment_success: "💰",
     booking_confirmed: "✅",
     booking_cancelled: "❌",
+    booking_success: "✅",
+    booking_new: "🔔",
   };
 
   const timeAgo = (dateStr: string) => {
@@ -133,6 +163,16 @@ export default function NotificationBell() {
                 </div>
               ))
             )}
+          </div>
+
+          <div className="px-4 py-3 border-t border-gray-100 bg-gray-50">
+            <Link
+              to="/notifications"
+              className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+              onClick={() => setOpen(false)}
+            >
+              Xem tất cả thông báo →
+            </Link>
           </div>
         </div>
       )}

@@ -1,150 +1,162 @@
-{
-  "name": "My workflow",
-  "nodes": [
-    {
-      "parameters": {
-        "public": true,
-        "mode": "webhook",
-        "options": {}
-      },
-      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
-      "typeVersion": 1.4,
-      "position": [
-        0,
-        0
-      ],
-      "id": "063d5fa7-2480-422e-b7d3-4cba94d15f9e",
-      "name": "When chat message received",
-      "webhookId": "77b5c6a2-50ba-439f-9a9b-2c800afe38e8"
-    },
-    {
-      "parameters": {
-        "options": {
-          "systemMessage": "\"Bạn là Trợ lý Du lịch AI. Khi khách hỏi về tour, khách sạn hay nhà hàng, bạn hãy TỰ ĐỘNG tạo câu lệnh SQL phù hợp và dùng Postgres Tool để tra cứu những cột có sẵn. Tuyệt đối không yêu cầu khách cung cấp câu lệnh SQL, hãy tự làm việc đó dựa trên cấu trúc database của hệ thống, không cung cấp hình ảnh. Luôn trả lời bằng tiếng Việt thân thiện.\""
-        }
-      },
-      "type": "@n8n/n8n-nodes-langchain.agent",
-      "typeVersion": 3.1,
-      "position": [
-        208,
-        0
-      ],
-      "id": "fa18faae-ac5a-45bd-90dc-43c4b680789f",
-      "name": "AI Agent"
-    },
-    {
-      "parameters": {
-        "modelName": "models/gemini-3-flash-preview",
-        "options": {}
-      },
-      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
-      "typeVersion": 1,
-      "position": [
-        80,
-        208
-      ],
-      "id": "8194e3cd-37d5-4298-ae85-ebaba06ef612",
-      "name": "Google Gemini Chat Model",
-      "credentials": {
-        "googlePalmApi": {
-          "id": "FmRYcbzenGLgZVmo",
-          "name": "Google Gemini(PaLM) Api account"
-        }
-      }
-    },
-    {
-      "parameters": {},
-      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
-      "typeVersion": 1.3,
-      "position": [
-        224,
-        208
-      ],
-      "id": "9a5c4a4f-cfcd-4abe-acd0-af05ba82d371",
-      "name": "Simple Memory"
-    },
-    {
-      "parameters": {
-        "descriptionType": "manual",
-        "toolDescription": "Execute a SQL query in Postgres",
-        "operation": "executeQuery",
-        "query": "{{ $fromAI(\"query\", \"The SQL query to execute\") }}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.postgresTool",
-      "typeVersion": 2.6,
-      "position": [
-        352,
-        240
-      ],
-      "id": "f8b9c6b5-7d6b-40d9-ac30-d35252fe4262",
-      "name": "Execute a SQL query in Postgres",
-      "credentials": {
-        "postgres": {
-          "id": "a4KxpP3urH9QfWO4",
-          "name": "Postgres account"
-        }
-      }
-    }
-  ],
-  "pinData": {},
-  "connections": {
-    "When chat message received": {
-      "main": [
-        [
-          {
-            "node": "AI Agent",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Google Gemini Chat Model": {
-      "ai_languageModel": [
-        [
-          {
-            "node": "AI Agent",
-            "type": "ai_languageModel",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Simple Memory": {
-      "ai_memory": [
-        [
-          {
-            "node": "AI Agent",
-            "type": "ai_memory",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Execute a SQL query in Postgres": {
-      "ai_tool": [
-        [
-          {
-            "node": "AI Agent",
-            "type": "ai_tool",
-            "index": 0
-          }
-        ]
-      ]
-    }
-  },
-  "active": true,
-  "settings": {
-    "executionOrder": "v1",
-    "binaryMode": "separate",
-    "availableInMCP": false
-  },
-  "versionId": "02c20d64-c468-4966-8580-c1fa7da35a7f",
-  "meta": {
-    "templateCredsSetupCompleted": true,
-    "instanceId": "46d53c28f20ad27d6908c33adf585410b38fba014eb64f6632bfc80b13462eff"
-  },
-  "id": "e9VGuoxN9A_-vOdO-8v-U",
-  "tags": []
+﻿{
+    "name":  "My workflow",
+    "nodes":  [
+                  {
+                      "parameters":  {
+                                         "public":  true,
+                                         "mode":  "webhook",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "@n8n/n8n-nodes-langchain.chatTrigger",
+                      "typeVersion":  1.4,
+                      "position":  [
+                                       0,
+                                       0
+                                   ],
+                      "id":  "063d5fa7-2480-422e-b7d3-4cba94d15f9e",
+                      "name":  "When chat message received",
+                      "webhookId":  "77b5c6a2-50ba-439f-9a9b-2c800afe38e8"
+                  },
+                  {
+                      "parameters":  {
+                                         "options":  {
+                                                         "systemMessage":  "Bạn là Chuyên viên Tư vấn Du lịch giàu kinh nghiệm của Travel SE Asia.\n\n=== CẤU TRÚC DATABASE (POSTGRES) ===\n\nBảng COUNTRIES: id, code, name, cover_url\n  - Ví dụ: \u0027Việt Nam\u0027, \u0027Thái Lan\u0027, \u0027Singapore\u0027...\n\nBảng LOCATIONS: id, country_id, name, description, address, province, rating, review_count, image_url, views_count\n  - JOIN với COUNTRIES qua: locations.country_id = countries.id\n\nBảng TOURS: id, name, days, transport, departure_location, description, image_url, location_id, is_active, rating, reviews_count, rating_text\n  - KHÔNG có cột price hay duration_days trong bảng này!\n  - Giá tour nằm ở bảng TOUR_DEPARTURES\n\nBảng TOUR_DEPARTURES: id, tour_id, departure_date, price, discount_percent, capacity, booked, is_promotion, status\n  - JOIN với TOURS qua: tour_departures.tour_id = tours.id\n  - Giá sau giảm = price * (1 - discount_percent/100.0)\n  - status: \u0027available\u0027, \u0027full\u0027, \u0027cancelled\u0027\n  - Ví dụ query tour theo địa điểm:\n    SELECT t.name, t.days, t.departure_location, t.rating, MIN(td.price) AS gia_tu, MIN(td.departure_date) AS ngay_gan_nhat FROM tours t JOIN tour_departures td ON td.tour_id = t.id JOIN locations l ON t.location_id = l.id WHERE l.name ILIKE \u0027%Hà Nội%\u0027 AND td.status = \u0027available\u0027 GROUP BY t.id, t.name, t.days, t.departure_location, t.rating ORDER BY gia_tu ASC LIMIT 10;\n\nBảng TOUR_SCHEDULES: id, tour_id, day_number, time, activity, image_url\n  - KHÔNG có cột \u0027title\u0027! Chỉ có day_number, time, activity\n  - Lịch trình từng ngày của tour\n  - JOIN với TOURS qua: tour_schedules.tour_id = tours.id\n  - Ví dụ: SELECT ts.day_number, ts.time, ts.activity FROM tour_schedules ts JOIN tours t ON ts.tour_id = t.id WHERE t.name ILIKE \u0027%Đà Nẵng%\u0027 ORDER BY ts.day_number, ts.time;\n\nBảng HOTELS: id, name, price_per_night, discount_percent, is_promotion, rating, rating_text, amenities, address, image_url, location_id\n  - KHÔNG có cột reviews_count hay description!\n  - amenities là JSON chứa tiện nghi: [\u0027Hồ bơi\u0027, \u0027WiFi\u0027, \u0027Nhà hàng\u0027, \u0027Spa\u0027...]\n  - Giá sau giảm = price_per_night * (1 - discount_percent/100.0)\n  - Ví dụ tìm hotel có hồ bơi: SELECT h.name, h.price_per_night, h.rating FROM hotels h JOIN locations l ON h.location_id = l.id WHERE h.amenities::text ILIKE \u0027%Hồ bơi%\u0027 AND l.name ILIKE \u0027%Đà Nẵng%\u0027;\n\nBảng HOTEL_ROOMS: id, hotel_id, name, price_per_night, discount_percent, capacity, quantity, bed_type, area, description\n  - JOIN với HOTELS qua: hotel_rooms.hotel_id = hotels.id\n\nBảng RESTAURANTS: id, name, min_price, max_price, discount_percent, is_promotion, rating, reviews_count, rating_text, description, amenities, menu, address, image_url, location_id\n  - Dùng min_price / max_price cho khoảng giá\n  - amenities, menu là JSON\n\nBảng RESTAURANT_TABLES: id, restaurant_id, name, capacity, quantity, price, discount_percent\n  - JOIN với RESTAURANTS qua: restaurant_tables.restaurant_id = restaurants.id\n\nBảng REVIEWS: id, user_id, reviewable_type, reviewable_id, rating, comment, is_approved\n  - reviewable_type: \u0027tour\u0027, \u0027hotel\u0027, hoặc \u0027restaurant\u0027\n  - Ví dụ tour được đánh giá cao: SELECT t.name, AVG(r.rating) AS diem FROM tours t JOIN reviews r ON r.reviewable_type = \u0027tour\u0027 AND r.reviewable_id = t.id WHERE r.is_approved = true GROUP BY t.id, t.name ORDER BY diem DESC LIMIT 5;\n\nBảng BLOGS: id, title, content, cover_url, is_published, created_at\n  - Bài viết du lịch, kinh nghiệm, tips\n  - Ví dụ: SELECT title, LEFT(content, 300) AS tom_tat FROM blogs WHERE is_published = true AND title ILIKE \u0027%Đà Nẵng%\u0027;\n\n=== QUY TẮC VIẾT SQL ===\n- Luôn dùng tên bảng/cột đúng như schema trên, không tự thêm cột không có\n- Khi hỏi về tour và giá: bắt buộc JOIN tour_departures\n- Khi hỏi lịch trình tour: JOIN tour_schedules, chỉ SELECT day_number, time, activity (không có cột title)\n- Khi hỏi review: dùng reviewable_type + reviewable_id\n- Khi hỏi tiện nghi hotel: dùng amenities::text ILIKE\n- Dùng ILIKE \u0027%...%\u0027 để tìm kiếm không phân biệt hoa thường\n- Giới hạn kết quả với LIMIT 10 nếu không cần tất cả\n\n=== GIAO TIẾP ===\n- Tự động tạo SQL, KHÔNG yêu cầu khách cung cấp SQL\n- Trình bày giá: 3.500.000 VNĐ\n- Phản hồi tiếng Việt thân thiện, nhiệt tình\n- Không cung cấp hình ảnh trừ khi được yêu cầu"
+                                                     }
+                                     },
+                      "type":  "@n8n/n8n-nodes-langchain.agent",
+                      "typeVersion":  3.1,
+                      "position":  [
+                                       208,
+                                       0
+                                   ],
+                      "id":  "fa18faae-ac5a-45bd-90dc-43c4b680789f",
+                      "name":  "AI Agent"
+                  },
+                  {
+                      "parameters":  {
+                                         "modelName":  "models/gemini-3-flash-preview",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+                      "typeVersion":  1,
+                      "position":  [
+                                       80,
+                                       208
+                                   ],
+                      "id":  "8194e3cd-37d5-4298-ae85-ebaba06ef612",
+                      "name":  "Google Gemini Chat Model",
+                      "credentials":  {
+                                          "googlePalmApi":  {
+                                                                "id":  "FmRYcbzenGLgZVmo",
+                                                                "name":  "Google Gemini(PaLM) Api account"
+                                                            }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+
+                                     },
+                      "type":  "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+                      "typeVersion":  1.3,
+                      "position":  [
+                                       224,
+                                       208
+                                   ],
+                      "id":  "9a5c4a4f-cfcd-4abe-acd0-af05ba82d371",
+                      "name":  "Simple Memory"
+                  },
+                  {
+                      "parameters":  {
+                                         "descriptionType":  "manual",
+                                         "toolDescription":  "Execute a SQL query in Postgres",
+                                         "operation":  "executeQuery",
+                                         "query":  "{{ $fromAI(\"query\", \"The SQL query to execute\") }}",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.postgresTool",
+                      "typeVersion":  2.6,
+                      "position":  [
+                                       352,
+                                       240
+                                   ],
+                      "id":  "f8b9c6b5-7d6b-40d9-ac30-d35252fe4262",
+                      "name":  "Execute a SQL query in Postgres",
+                      "credentials":  {
+                                          "postgres":  {
+                                                           "id":  "a4KxpP3urH9QfWO4",
+                                                           "name":  "Postgres account"
+                                                       }
+                                      }
+                  }
+              ],
+    "pinData":  {
+
+                },
+    "connections":  {
+                        "When chat message received":  {
+                                                           "main":  [
+                                                                        [
+                                                                            {
+                                                                                "node":  "AI Agent",
+                                                                                "type":  "main",
+                                                                                "index":  0
+                                                                            }
+                                                                        ]
+                                                                    ]
+                                                       },
+                        "Google Gemini Chat Model":  {
+                                                         "ai_languageModel":  [
+                                                                                  [
+                                                                                      {
+                                                                                          "node":  "AI Agent",
+                                                                                          "type":  "ai_languageModel",
+                                                                                          "index":  0
+                                                                                      }
+                                                                                  ]
+                                                                              ]
+                                                     },
+                        "Simple Memory":  {
+                                              "ai_memory":  [
+                                                                [
+                                                                    {
+                                                                        "node":  "AI Agent",
+                                                                        "type":  "ai_memory",
+                                                                        "index":  0
+                                                                    }
+                                                                ]
+                                                            ]
+                                          },
+                        "Execute a SQL query in Postgres":  {
+                                                                "ai_tool":  [
+                                                                                [
+                                                                                    {
+                                                                                        "node":  "AI Agent",
+                                                                                        "type":  "ai_tool",
+                                                                                        "index":  0
+                                                                                    }
+                                                                                ]
+                                                                            ]
+                                                            }
+                    },
+    "active":  true,
+    "settings":  {
+                     "executionOrder":  "v1",
+                     "binaryMode":  "separate",
+                     "availableInMCP":  false
+                 },
+    "versionId":  "02c20d64-c468-4966-8580-c1fa7da35a7f",
+    "meta":  {
+                 "templateCredsSetupCompleted":  true,
+                 "instanceId":  "46d53c28f20ad27d6908c33adf585410b38fba014eb64f6632bfc80b13462eff"
+             },
+    "id":  "e9VGuoxN9A_-vOdO-8v-U",
+    "tags":  [
+
+             ]
 }

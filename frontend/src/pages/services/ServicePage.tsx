@@ -15,6 +15,11 @@ interface Service {
   promotion_end?: string;
 }
 
+interface RawService extends Service {
+  image?: string;
+  min_price?: number;
+}
+
 export default function ServicePage() {
   const [hotels, setHotels] = useState<Service[]>([]);
   const [restaurants, setRestaurants] = useState<Service[]>([]);
@@ -38,7 +43,7 @@ export default function ServicePage() {
         const hotelJson = await hotelRes.json();
         const restaurantJson = await restaurantRes.json();
 
-        const hotelData = (hotelJson.data ?? hotelJson).map((item: any) => ({
+        const hotelData = (hotelJson.data ?? hotelJson).map((item: RawService) => ({
           ...item,
           image_url: item.image_url || item.image || "",
           discount_percent: item.discount_percent || 0,
@@ -47,7 +52,7 @@ export default function ServicePage() {
         }));
 
         const restaurantData = (restaurantJson.data ?? restaurantJson).map(
-          (item: any) => ({
+          (item: RawService) => ({
             ...item,
             image_url: item.image_url || item.image || "",
             avg_price: item.avg_price || item.min_price || 0,

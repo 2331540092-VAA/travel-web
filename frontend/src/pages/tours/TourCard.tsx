@@ -1,7 +1,25 @@
 import { Link } from "react-router-dom";
 
+interface TourDeparture {
+  id: number;
+  departure_date: string;
+  status: string;
+}
+
+interface Tour {
+  id: number;
+  name: string;
+  image_url: string;
+  price?: number;
+  code?: string;
+  departure_location?: string;
+  days?: number;
+  transport?: string;
+  departures?: TourDeparture[];
+}
+
 interface TourCardProps {
-  tour: any;
+  tour: Tour;
 }
 
 export default function TourCard({ tour }: TourCardProps) {

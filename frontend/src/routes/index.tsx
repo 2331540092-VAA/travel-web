@@ -8,7 +8,12 @@ import ProfileLayout from "../layouts/ProfileLayout";
 import Home from "../pages/home/Home";
 import Login from "../pages/auth/Login";
 import Register from "../pages/auth/Register";
+import ForgotPassword from "../pages/auth/ForgotPassword";
+import ResetPassword from "../pages/auth/ResetPassword";
 import Profile from "../pages/profile/Profile";
+
+// Notifications
+import NotificationList from "../pages/notifications/NotificationList";
 
 // Blog
 
@@ -69,12 +74,17 @@ function AppRoutes() {
         <Route path="/payment-success" element={<PaymentSuccess />} />
         <Route path="/bookings" element={<BookingHistory />} />
         <Route path="/bookings/:id" element={<BookingDetail />} />
+
+        {/* Notifications */}
+        <Route path="/notifications" element={<NotificationList />} />
       </Route>
 
       {/* ================= AUTH ================= */}
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
       </Route>
 
       {/* ================= GOOGLE CALLBACK ================= */}

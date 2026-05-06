@@ -1,0 +1,971 @@
+﻿{
+    "name":  "My workflow",
+    "nodes":  [
+                  {
+                      "parameters":  {
+                                         "public":  true,
+                                         "mode":  "webhook",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "@n8n/n8n-nodes-langchain.chatTrigger",
+                      "typeVersion":  1.4,
+                      "position":  [
+                                       0,
+                                       0
+                                   ],
+                      "id":  "f3e71b5f-83b3-4b49-af7e-440255161c42",
+                      "name":  "When chat message received",
+                      "webhookId":  "77b5c6a2-50ba-439f-9a9b-2c800afe38e8"
+                  },
+                  {
+                      "parameters":  {
+                                         "options":  {
+                                                         "systemMessage":  "Bạn là Chuyên viên Tư vấn Du lịch giàu kinh nghiệm của Travel SE Asia.\n\n=== CẤU TRÚC DATABASE (POSTGRES) ===\n\nBảng COUNTRIES: id, code, name, cover_url\n  - Ví dụ: \u0027Việt Nam\u0027, \u0027Thái Lan\u0027, \u0027Singapore\u0027...\n\nBảng LOCATIONS: id, country_id, name, description, address, province, rating, review_count, image_url, views_count\n  - JOIN với COUNTRIES qua: locations.country_id = countries.id\n\nBảng TOURS: id, name, days, transport, departure_location, description, image_url, location_id, is_active, rating, reviews_count, rating_text\n  - KHÔNG có cột price hay duration_days trong bảng này!\n  - Giá tour nằm ở bảng TOUR_DEPARTURES\n\nBảng TOUR_DEPARTURES: id, tour_id, departure_date, price, discount_percent, capacity, booked, is_promotion, status\n  - JOIN với TOURS qua: tour_departures.tour_id = tours.id\n  - Giá sau giảm = price * (1 - discount_percent/100.0)\n  - status: \u0027available\u0027, \u0027full\u0027, \u0027cancelled\u0027\n  - Ví dụ query tour theo địa điểm:\n    SELECT t.name, t.days, t.departure_location, t.rating, MIN(td.price) AS gia_tu, MIN(td.departure_date) AS ngay_gan_nhat FROM tours t JOIN tour_departures td ON td.tour_id = t.id JOIN locations l ON t.location_id = l.id WHERE l.name ILIKE \u0027%Hà Nội%\u0027 AND td.status = \u0027available\u0027 GROUP BY t.id, t.name, t.days, t.departure_location, t.rating ORDER BY gia_tu ASC LIMIT 10;\n\nBảng TOUR_SCHEDULES: id, tour_id, day_number, time, activity, image_url\n  - KHÔNG có cột \u0027title\u0027! Chỉ có day_number, time, activity\n  - Lịch trình từng ngày của tour\n  - JOIN với TOURS qua: tour_schedules.tour_id = tours.id\n  - Ví dụ: SELECT ts.day_number, ts.time, ts.activity FROM tour_schedules ts JOIN tours t ON ts.tour_id = t.id WHERE t.name ILIKE \u0027%Đà Nẵng%\u0027 ORDER BY ts.day_number, ts.time;\n\nBảng HOTELS: id, name, price_per_night, discount_percent, is_promotion, rating, rating_text, amenities, address, image_url, location_id\n  - KHÔNG có cột reviews_count hay description!\n  - amenities là JSON chứa tiện nghi: [\u0027Hồ bơi\u0027, \u0027WiFi\u0027, \u0027Nhà hàng\u0027, \u0027Spa\u0027...]\n  - Giá sau giảm = price_per_night * (1 - discount_percent/100.0)\n  - Ví dụ tìm hotel có hồ bơi: SELECT h.name, h.price_per_night, h.rating FROM hotels h JOIN locations l ON h.location_id = l.id WHERE h.amenities::text ILIKE \u0027%Hồ bơi%\u0027 AND l.name ILIKE \u0027%Đà Nẵng%\u0027;\n\nBảng HOTEL_ROOMS: id, hotel_id, name, price_per_night, discount_percent, capacity, quantity, bed_type, area, description\n  - JOIN với HOTELS qua: hotel_rooms.hotel_id = hotels.id\n\nBảng RESTAURANTS: id, name, min_price, max_price, discount_percent, is_promotion, rating, reviews_count, rating_text, description, amenities, menu, address, image_url, location_id\n  - Dùng min_price / max_price cho khoảng giá\n  - amenities, menu là JSON\n\nBảng RESTAURANT_TABLES: id, restaurant_id, name, capacity, quantity, price, discount_percent\n  - JOIN với RESTAURANTS qua: restaurant_tables.restaurant_id = restaurants.id\n\nBảng REVIEWS: id, user_id, reviewable_type, reviewable_id, rating, comment, is_approved\n  - reviewable_type: \u0027tour\u0027, \u0027hotel\u0027, hoặc \u0027restaurant\u0027\n  - Ví dụ tour được đánh giá cao: SELECT t.name, AVG(r.rating) AS diem FROM tours t JOIN reviews r ON r.reviewable_type = \u0027tour\u0027 AND r.reviewable_id = t.id WHERE r.is_approved = true GROUP BY t.id, t.name ORDER BY diem DESC LIMIT 5;\n\nBảng BLOGS: id, title, content, cover_url, is_published, created_at\n  - Bài viết du lịch, kinh nghiệm, tips\n  - Ví dụ: SELECT title, LEFT(content, 300) AS tom_tat FROM blogs WHERE is_published = true AND title ILIKE \u0027%Đà Nẵng%\u0027;\n\n=== QUY TẮC VIẾT SQL ===\n- Luôn dùng tên bảng/cột đúng như schema trên, không tự thêm cột không có\n- Khi hỏi về tour và giá: bắt buộc JOIN tour_departures\n- Khi hỏi lịch trình tour: JOIN tour_schedules, chỉ SELECT day_number, time, activity (không có cột title)\n- Khi hỏi review: dùng reviewable_type + reviewable_id\n- Khi hỏi tiện nghi hotel: dùng amenities::text ILIKE\n- Dùng ILIKE \u0027%...%\u0027 để tìm kiếm không phân biệt hoa thường\n- Giới hạn kết quả với LIMIT 10 nếu không cần tất cả\n\n=== GIAO TIẾP ===\n- Tự động tạo SQL, KHÔNG yêu cầu khách cung cấp SQL\n- Trình bày giá: 3.500.000 VNĐ\n- Phản hồi tiếng Việt thân thiện, nhiệt tình\n- Không cung cấp hình ảnh trừ khi được yêu cầu"
+                                                     }
+                                     },
+                      "type":  "@n8n/n8n-nodes-langchain.agent",
+                      "typeVersion":  3.1,
+                      "position":  [
+                                       208,
+                                       0
+                                   ],
+                      "id":  "0fb686b0-04ef-4428-8d7d-6042be797148",
+                      "name":  "AI Agent"
+                  },
+                  {
+                      "parameters":  {
+                                         "modelName":  "models/gemini-2.5-flash-lite",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+                      "typeVersion":  1,
+                      "position":  [
+                                       80,
+                                       208
+                                   ],
+                      "id":  "5064d9d4-0fb4-4856-8980-77bf8f260026",
+                      "name":  "Google Gemini Chat Model",
+                      "credentials":  {
+                                          "googlePalmApi":  {
+                                                                "id":  "Bjh8KyG3outSLUqE",
+                                                                "name":  "Google Gemini(PaLM) Api account"
+                                                            }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+
+                                     },
+                      "type":  "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+                      "typeVersion":  1.3,
+                      "position":  [
+                                       224,
+                                       208
+                                   ],
+                      "id":  "fa07152c-ad37-4e57-8fb9-a342685062ed",
+                      "name":  "Simple Memory"
+                  },
+                  {
+                      "parameters":  {
+                                         "descriptionType":  "manual",
+                                         "toolDescription":  "Execute a SQL query in Postgres",
+                                         "operation":  "executeQuery",
+                                         "query":  "{{ $fromAI(\"query\", \"The SQL query to execute\") }}",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.postgresTool",
+                      "typeVersion":  2.6,
+                      "position":  [
+                                       384,
+                                       208
+                                   ],
+                      "id":  "95204dd0-edf7-4922-836e-b694506adcb3",
+                      "name":  "Execute a SQL query in Postgres",
+                      "credentials":  {
+                                          "postgres":  {
+                                                           "id":  "jvwLTdJYg6WcA4ek",
+                                                           "name":  "Postgres account"
+                                                       }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "httpMethod":  "POST",
+                                         "path":  "46f73c36-5a9c-4715-86d7-b79931481e86",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.webhook",
+                      "typeVersion":  2.1,
+                      "position":  [
+                                       -304,
+                                       768
+                                   ],
+                      "id":  "4f4efb38-c077-4467-b200-612e6c8ffe6e",
+                      "name":  "Webhook",
+                      "webhookId":  "46f73c36-5a9c-4715-86d7-b79931481e86"
+                  },
+                  {
+                      "parameters":  {
+                                         "fromEmail":  "Travel SE Asia \u003cnameless2k5@gmail.com\u003e",
+                                         "toEmail":  "={{ $json.body.customer_email }}",
+                                         "subject":  "=Xác nhận đặt Tour thành công - Travel SE Asia",
+                                         "html":  "=\u003c!DOCTYPE html\u003e\n\u003chtml\u003e\n\u003cbody style=\"font-family: Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px;\"\u003e\n    \u003cdiv style=\"background-color: #ffffff; max-width: 600px; margin: 0 auto; border-radius: 10px; overflow: hidden;\"\u003e\n        \u003cdiv style=\"background-color: #f97316; color: #ffffff; padding: 20px; text-align: center;\"\u003e\n            \u003ch2 style=\"margin: 0;\"\u003eXác nhận đặt Tour thành công!\u003c/h2\u003e\n        \u003c/div\u003e\n        \u003cdiv style=\"padding: 30px; line-height: 1.6; color: #333333;\"\u003e\n            \u003cp\u003eXin chào \u003cstrong\u003e{{ $json.body.customer_name }}\u003c/strong\u003e,\u003c/p\u003e\n            \u003cp\u003eTravel SE Asia xin xác nhận bạn đã đăng ký và thanh toán thành công chuyến hành trình khám phá sắp tới.\u003c/p\u003e\n            \n            \u003ctable style=\"width: 100%; border-collapse: collapse; margin-top: 20px;\"\u003e\n                \u003ctr\u003e\u003cth style=\"background-color: #f1f5f9; padding: 10px; text-align: left; width: 40%; border: 1px solid #e2e8f0;\"\u003eTên Tour\u003c/th\u003e\u003ctd style=\"padding: 10px; border: 1px solid #e2e8f0;\"\u003e{{ $json.body.service_name }}\u003c/td\u003e\u003c/tr\u003e\n                \u003ctr\u003e\u003cth style=\"background-color: #f1f5f9; padding: 10px; text-align: left; border: 1px solid #e2e8f0;\"\u003eMã Booking\u003c/th\u003e\u003ctd style=\"padding: 10px; border: 1px solid #e2e8f0;\"\u003e#{{ $json.body.booking_id }}\u003c/td\u003e\u003c/tr\u003e\n                \u003ctr\u003e\u003cth style=\"background-color: #f1f5f9; padding: 10px; text-align: left; border: 1px solid #e2e8f0;\"\u003eNgày khởi hành\u003c/th\u003e\u003ctd style=\"padding: 10px; border: 1px solid #e2e8f0;\"\u003e{{ $json.body.check_in }}\u003c/td\u003e\u003c/tr\u003e\n                \u003ctr\u003e\u003cth style=\"background-color: #f1f5f9; padding: 10px; text-align: left; border: 1px solid #e2e8f0;\"\u003eTổng thanh toán\u003c/th\u003e\u003ctd style=\"padding: 10px; border: 1px solid #e2e8f0;\"\u003e\u003cstrong style=\"color: #16a34a;\"\u003e{{ $json.body.total_amount }} VNĐ\u003c/strong\u003e\u003c/td\u003e\u003c/tr\u003e\n            \u003c/table\u003e\n\n            \u003cdiv style=\"background-color: #fff7ed; border-left: 4px solid #f97316; padding: 15px; margin-top: 25px;\"\u003e\n                \u003ch4 style=\"margin-top: 0; color: #ea580c;\"\u003e🎒 Hành trang cần lưu ý:\u003c/h4\u003e\n                \u003cul style=\"margin-bottom: 0; padding-left: 20px;\"\u003e\n                    \u003cli\u003eQuý khách nhớ mang theo \u003cb\u003egiày thể thao\u003c/b\u003e mềm mại để thoải mái đi bộ khám phá các cung đường nhé.\u003c/li\u003e\n                    \u003cli\u003eNên trang bị sẵn \u003cb\u003edù che nắng/mưa\u003c/b\u003e và đừng quên kem chống nắng.\u003c/li\u003e\n                    \u003cli\u003eHướng dẫn viên sẽ chủ động liên hệ với bạn trước giờ khởi hành 1 ngày.\u003c/li\u003e\n                \u003c/ul\u003e\n            \u003c/div\u003e\n            \n            \u003cp\u003eChúc bạn có một chuyến đi bùng nổ!\u003c/p\u003e\n            \u003cp\u003eTrân trọng,\u003cbr\u003e\u003cstrong\u003eĐội ngũ Travel SE Asia\u003c/strong\u003e\u003c/p\u003e\n        \u003c/div\u003e\n    \u003c/div\u003e\n\u003c/body\u003e\n\u003c/html\u003e\n",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.emailSend",
+                      "typeVersion":  2.1,
+                      "position":  [
+                                       352,
+                                       400
+                                   ],
+                      "id":  "6a5b5dd4-4960-4b21-b7d3-d6fad3164573",
+                      "name":  "Send an Email",
+                      "webhookId":  "cde725d3-f276-4d55-ae12-fb43a3d1129b",
+                      "credentials":  {
+                                          "smtp":  {
+                                                       "id":  "of1LlaIZeqtVQp52",
+                                                       "name":  "SMTP account"
+                                                   }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "appendOrUpdate",
+                                         "documentId":  {
+                                                            "__rl":  true,
+                                                            "value":  "1d8jO3sVlaLJT1EpImn_U-FQsxiTRkXT76exyXWduj88",
+                                                            "mode":  "list",
+                                                            "cachedResultName":  "Quản lý Booking Travel SE Asia",
+                                                            "cachedResultUrl":  "https://docs.google.com/spreadsheets/d/1d8jO3sVlaLJT1EpImn_U-FQsxiTRkXT76exyXWduj88/edit?usp=drivesdk"
+                                                        },
+                                         "sheetName":  {
+                                                           "__rl":  true,
+                                                           "value":  "gid=0",
+                                                           "mode":  "list",
+                                                           "cachedResultName":  "Sheet1",
+                                                           "cachedResultUrl":  "https://docs.google.com/spreadsheets/d/1d8jO3sVlaLJT1EpImn_U-FQsxiTRkXT76exyXWduj88/edit#gid=0"
+                                                       },
+                                         "columns":  {
+                                                         "mappingMode":  "defineBelow",
+                                                         "value":  {
+                                                                       "Mã Booking":  "={{ $json.body.booking_id }}",
+                                                                       "Tên Khách":  "={{ $json.body.customer_name }}",
+                                                                       "SĐT / Email":  "={{ $json.body.customer_email }}",
+                                                                       "Tên dịch vụ":  "={{ $json.body.service_name }}",
+                                                                       "Loại dịch vụ":  "={{ $json.body.booking_type }}",
+                                                                       "Số lượng":  "={{ $json.body.quantity }}",
+                                                                       "Check-in":  "={{ $json.body.check_in }}",
+                                                                       "Check-out":  "={{ $json.body.check_out }}",
+                                                                       "Tổng tiền":  "={{ $json.body.total_amount }}"
+                                                                   },
+                                                         "matchingColumns":  [
+                                                                                 "Mã Booking"
+                                                                             ],
+                                                         "schema":  [
+                                                                        {
+                                                                            "id":  "Mã Booking",
+                                                                            "displayName":  "Mã Booking",
+                                                                            "required":  false,
+                                                                            "defaultMatch":  false,
+                                                                            "display":  true,
+                                                                            "type":  "string",
+                                                                            "canBeUsedToMatch":  true,
+                                                                            "removed":  false
+                                                                        },
+                                                                        {
+                                                                            "id":  "Tên Khách",
+                                                                            "displayName":  "Tên Khách",
+                                                                            "required":  false,
+                                                                            "defaultMatch":  false,
+                                                                            "display":  true,
+                                                                            "type":  "string",
+                                                                            "canBeUsedToMatch":  true
+                                                                        },
+                                                                        {
+                                                                            "id":  "SĐT / Email",
+                                                                            "displayName":  "SĐT / Email",
+                                                                            "required":  false,
+                                                                            "defaultMatch":  false,
+                                                                            "display":  true,
+                                                                            "type":  "string",
+                                                                            "canBeUsedToMatch":  true
+                                                                        },
+                                                                        {
+                                                                            "id":  "Loại dịch vụ",
+                                                                            "displayName":  "Loại dịch vụ",
+                                                                            "required":  false,
+                                                                            "defaultMatch":  false,
+                                                                            "display":  true,
+                                                                            "type":  "string",
+                                                                            "canBeUsedToMatch":  true
+                                                                        },
+                                                                        {
+                                                                            "id":  "Tên dịch vụ",
+                                                                            "displayName":  "Tên dịch vụ",
+                                                                            "required":  false,
+                                                                            "defaultMatch":  false,
+                                                                            "display":  true,
+                                                                            "type":  "string",
+                                                                            "canBeUsedToMatch":  true
+                                                                        },
+                                                                        {
+                                                                            "id":  "Check-in",
+                                                                            "displayName":  "Check-in",
+                                                                            "required":  false,
+                                                                            "defaultMatch":  false,
+                                                                            "display":  true,
+                                                                            "type":  "string",
+                                                                            "canBeUsedToMatch":  true
+                                                                        },
+                                                                        {
+                                                                            "id":  "Check-out",
+                                                                            "displayName":  "Check-out",
+                                                                            "required":  false,
+                                                                            "defaultMatch":  false,
+                                                                            "display":  true,
+                                                                            "type":  "string",
+                                                                            "canBeUsedToMatch":  true
+                                                                        },
+                                                                        {
+                                                                            "id":  "Số lượng",
+                                                                            "displayName":  "Số lượng",
+                                                                            "required":  false,
+                                                                            "defaultMatch":  false,
+                                                                            "display":  true,
+                                                                            "type":  "string",
+                                                                            "canBeUsedToMatch":  true
+                                                                        },
+                                                                        {
+                                                                            "id":  "Tổng tiền",
+                                                                            "displayName":  "Tổng tiền",
+                                                                            "required":  false,
+                                                                            "defaultMatch":  false,
+                                                                            "display":  true,
+                                                                            "type":  "string",
+                                                                            "canBeUsedToMatch":  true,
+                                                                            "removed":  false
+                                                                        }
+                                                                    ],
+                                                         "attemptToConvertTypes":  false,
+                                                         "convertFieldsToString":  false
+                                                     },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.googleSheets",
+                      "typeVersion":  4.7,
+                      "position":  [
+                                       -16,
+                                       976
+                                   ],
+                      "id":  "e726c1ec-0272-4cad-9168-e07fcce9354e",
+                      "name":  "Append or update row in sheet",
+                      "credentials":  {
+                                          "googleSheetsOAuth2Api":  {
+                                                                        "id":  "UHTUY46iPQX3iN5J",
+                                                                        "name":  "Google Sheets account"
+                                                                    }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "chatId":  "5800654516",
+                                         "text":  "=🎉 TING TING! CÓ KHÁCH ĐẶT TOUR DU LỊCH!\n👉 Dịch vụ: {{ $json.body.booking_type }} - {{ $json.body.service_name }}\n👤 Khách hàng: {{ $json.body.customer_name }}\n📞 Thông tin: {{ $json.body.customer_email }}\n💸 Doanh thu: {{ $json.body.total_amount }} VNĐ\n--------------------------\nMã Hóa đơn: #{{ $json.body.booking_id }}\nVui lòng chuẩn bị để đón/phục vụ khách!",
+                                         "additionalFields":  {
+
+                                                              }
+                                     },
+                      "type":  "n8n-nodes-base.telegram",
+                      "typeVersion":  1.2,
+                      "position":  [
+                                       352,
+                                       544
+                                   ],
+                      "id":  "db42f373-01ed-4545-9852-645831d24a1b",
+                      "name":  "Send a text message",
+                      "webhookId":  "438bc20b-1c41-4449-b177-fd49e32fe87b",
+                      "credentials":  {
+                                          "telegramApi":  {
+                                                              "id":  "H5xEmUp1uTuHtTTO",
+                                                              "name":  "Telegram account"
+                                                          }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "rules":  {
+                                                       "values":  [
+                                                                      {
+                                                                          "conditions":  {
+                                                                                             "options":  {
+                                                                                                             "caseSensitive":  true,
+                                                                                                             "leftValue":  "",
+                                                                                                             "typeValidation":  "strict",
+                                                                                                             "version":  3
+                                                                                                         },
+                                                                                             "conditions":  [
+                                                                                                                {
+                                                                                                                    "leftValue":  "={{ $json.body.booking_type }}",
+                                                                                                                    "rightValue":  "Tour",
+                                                                                                                    "operator":  {
+                                                                                                                                     "type":  "string",
+                                                                                                                                     "operation":  "equals"
+                                                                                                                                 },
+                                                                                                                    "id":  "69d17255-1735-4350-ba62-6dc0d10070fd"
+                                                                                                                }
+                                                                                                            ],
+                                                                                             "combinator":  "and"
+                                                                                         }
+                                                                      },
+                                                                      {
+                                                                          "conditions":  {
+                                                                                             "options":  {
+                                                                                                             "caseSensitive":  true,
+                                                                                                             "leftValue":  "",
+                                                                                                             "typeValidation":  "strict",
+                                                                                                             "version":  3
+                                                                                                         },
+                                                                                             "conditions":  [
+                                                                                                                {
+                                                                                                                    "id":  "41be6d7f-5c41-4267-9155-70e2e04c6bf8",
+                                                                                                                    "leftValue":  "={{ $json.body.booking_type }}",
+                                                                                                                    "rightValue":  "Hotel",
+                                                                                                                    "operator":  {
+                                                                                                                                     "type":  "string",
+                                                                                                                                     "operation":  "equals",
+                                                                                                                                     "name":  "filter.operator.equals"
+                                                                                                                                 }
+                                                                                                                }
+                                                                                                            ],
+                                                                                             "combinator":  "and"
+                                                                                         }
+                                                                      },
+                                                                      {
+                                                                          "conditions":  {
+                                                                                             "options":  {
+                                                                                                             "caseSensitive":  true,
+                                                                                                             "leftValue":  "",
+                                                                                                             "typeValidation":  "strict",
+                                                                                                             "version":  3
+                                                                                                         },
+                                                                                             "conditions":  [
+                                                                                                                {
+                                                                                                                    "id":  "5e7c2a3d-0203-4532-a77e-ac4e5bb2c242",
+                                                                                                                    "leftValue":  "={{ $json.body.booking_type }}",
+                                                                                                                    "rightValue":  "Restaurant",
+                                                                                                                    "operator":  {
+                                                                                                                                     "type":  "string",
+                                                                                                                                     "operation":  "equals",
+                                                                                                                                     "name":  "filter.operator.equals"
+                                                                                                                                 }
+                                                                                                                }
+                                                                                                            ],
+                                                                                             "combinator":  "and"
+                                                                                         }
+                                                                      }
+                                                                  ]
+                                                   },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.switch",
+                      "typeVersion":  3.4,
+                      "position":  [
+                                       -16,
+                                       752
+                                   ],
+                      "id":  "a816a9c5-8325-49cc-956b-8387ac30000e",
+                      "name":  "Switch"
+                  },
+                  {
+                      "parameters":  {
+                                         "chatId":  "5800654516",
+                                         "text":  "=🏨 TING TING! CÓ KHÁCH ĐẶT PHÒNG KHÁCH SẠN!\n👉 Hạng phòng: {{ $json.body.service_name }}\n👤 Khách hàng: {{ $json.body.customer_name }}\n📞 Liên hệ: {{ $json.body.customer_email }}\n📅 Ngày nhận phòng: {{ $json.body.check_in }}\n📅 Ngày trả phòng: {{ $json.body.check_out }}\n💸 Đã thanh toán: {{ $json.body.total_amount }} VNĐ\n--------------------------\nMã Booking: #{{ $json.body.booking_id }}\nVui lòng báo bộ phận Lễ tân dọn phòng và chuẩn bị chìa khóa đón khách!\n",
+                                         "additionalFields":  {
+
+                                                              }
+                                     },
+                      "type":  "n8n-nodes-base.telegram",
+                      "typeVersion":  1.2,
+                      "position":  [
+                                       352,
+                                       832
+                                   ],
+                      "id":  "558b8183-c5c2-4aee-8f47-de5c6d16c075",
+                      "name":  "Send a text message1",
+                      "webhookId":  "438bc20b-1c41-4449-b177-fd49e32fe87b",
+                      "credentials":  {
+                                          "telegramApi":  {
+                                                              "id":  "H5xEmUp1uTuHtTTO",
+                                                              "name":  "Telegram account"
+                                                          }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "chatId":  "5800654516",
+                                         "text":  "=🍽️ TING TING! CÓ KHÁCH ĐẶT BÀN NHÀ HÀNG!\n👉 Vị trí/Tên bàn: {{ $json.body.service_name }}\n👤 Khách hàng: {{ $json.body.customer_name }}\n📞 Liên hệ: {{ $json.body.customer_email }}\n📅 Ngày đến tiệc: {{ $json.body.check_in }}\n👥 Khách đi nhóm: {{ $json.body.quantity }} người\n💸 Đã cọc/Thanh toán: {{ $json.body.total_amount }} VNĐ\n--------------------------\nMã Booking: #{{ $json.body.booking_id }}\nVui lòng thông báo ngay cho Bếp trưởng và Quản lý sảnh lên thực đơn!\n",
+                                         "additionalFields":  {
+
+                                                              }
+                                     },
+                      "type":  "n8n-nodes-base.telegram",
+                      "typeVersion":  1.2,
+                      "position":  [
+                                       352,
+                                       1120
+                                   ],
+                      "id":  "1b058b3e-9843-427a-b652-6746907cf067",
+                      "name":  "Send a text message2",
+                      "webhookId":  "438bc20b-1c41-4449-b177-fd49e32fe87b",
+                      "credentials":  {
+                                          "telegramApi":  {
+                                                              "id":  "H5xEmUp1uTuHtTTO",
+                                                              "name":  "Telegram account"
+                                                          }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "fromEmail":  "Travel SE Asia \u003cnameless2k5@gmail.com\u003e",
+                                         "toEmail":  "={{ $json.body.customer_email }}",
+                                         "subject":  "=Xác nhận đặt Khách sạn thành công - Travel SE Asia",
+                                         "html":  "=\u003c!DOCTYPE html\u003e\n\u003chtml\u003e\n\u003cbody style=\"font-family: Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px;\"\u003e\n    \u003cdiv style=\"background-color: #ffffff; max-width: 600px; margin: 0 auto; border-radius: 10px; overflow: hidden;\"\u003e\n        \u003cdiv style=\"background-color: #2563eb; color: #ffffff; padding: 20px; text-align: center;\"\u003e\n            \u003ch2 style=\"margin: 0;\"\u003eXác nhận đặt Phòng Khách Sạn!\u003c/h2\u003e\n        \u003c/div\u003e\n        \u003cdiv style=\"padding: 30px; line-height: 1.6; color: #333333;\"\u003e\n            \u003cp\u003eXin chào \u003cstrong\u003e{{ $json.body.customer_name }}\u003c/strong\u003e,\u003c/p\u003e\n            \u003cp\u003eCảm ơn bạn đã lựa chọn dịch vụ nghỉ dưỡng của chúng tôi. Chúng tôi đã nhận được thanh toán và giữ phòng thành công cho bạn.\u003c/p\u003e\n            \n            \u003ctable style=\"width: 100%; border-collapse: collapse; margin-top: 20px;\"\u003e\n                \u003ctr\u003e\u003cth style=\"background-color: #f1f5f9; padding: 10px; text-align: left; width: 40%; border: 1px solid #e2e8f0;\"\u003eHạng Phòng\u003c/th\u003e\u003ctd style=\"padding: 10px; border: 1px solid #e2e8f0;\"\u003e{{ $json.body.service_name }}\u003c/td\u003e\u003c/tr\u003e\n                \u003ctr\u003e\u003cth style=\"background-color: #f1f5f9; padding: 10px; text-align: left; border: 1px solid #e2e8f0;\"\u003eMã Booking\u003c/th\u003e\u003ctd style=\"padding: 10px; border: 1px solid #e2e8f0;\"\u003e#{{ $json.body.booking_id }}\u003c/td\u003e\u003c/tr\u003e\n                \u003ctr\u003e\u003cth style=\"background-color: #f1f5f9; padding: 10px; text-align: left; border: 1px solid #e2e8f0;\"\u003eLịch nghỉ dưỡng\u003c/th\u003e\u003ctd style=\"padding: 10px; border: 1px solid #e2e8f0;\"\u003e{{ $json.body.check_in }} ➝ {{ $json.body.check_out }}\u003c/td\u003e\u003c/tr\u003e\n                \u003ctr\u003e\u003cth style=\"background-color: #f1f5f9; padding: 10px; text-align: left; border: 1px solid #e2e8f0;\"\u003eTổng thanh toán\u003c/th\u003e\u003ctd style=\"padding: 10px; border: 1px solid #e2e8f0;\"\u003e\u003cstrong style=\"color: #16a34a;\"\u003e{{ $json.body.total_amount }} VNĐ\u003c/strong\u003e\u003c/td\u003e\u003c/tr\u003e\n            \u003c/table\u003e\n\n            \u003cdiv style=\"background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 15px; margin-top: 25px;\"\u003e\n                \u003ch4 style=\"margin-top: 0; color: #1d4ed8;\"\u003e🔑 Lưu ý nhận phòng (Check-in):\u003c/h4\u003e\n                \u003cul style=\"margin-bottom: 0; padding-left: 20px;\"\u003e\n                    \u003cli\u003eGiờ nhận phòng tiêu chuẩn là \u003cb\u003e14:00 chiều\u003c/b\u003e. Giờ trả phòng là \u003cb\u003e12:00 trưa\u003c/b\u003e.\u003c/li\u003e\n                    \u003cli\u003eVui lòng mang theo \u003cb\u003eCMND/CCCD/Hộ chiếu gốc\u003c/b\u003e để Lễ tân tiến hành làm thủ tục.\u003c/li\u003e\n                    \u003cli\u003e📍 Bấm vào đây để xem \u003ca href=\"https://maps.google.com/?q=Hà+Nội\" target=\"_blank\" style=\"color: #2563eb; font-weight: bold;\"\u003e Vị trí Bản đồ Google Maps\u003c/a\u003e của Khách sạn.\u003c/li\u003e\n                \u003c/ul\u003e\n            \u003c/div\u003e\n            \n            \u003cp\u003eChúc bạn có một kỳ nghỉ dưỡng tuyệt vời!\u003c/p\u003e\n            \u003cp\u003eTrân trọng,\u003cbr\u003e\u003cstrong\u003eĐội ngũ Travel SE Asia\u003c/strong\u003e\u003c/p\u003e\n        \u003c/div\u003e\n    \u003c/div\u003e\n\u003c/body\u003e\n\u003c/html\u003e\n",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.emailSend",
+                      "typeVersion":  2.1,
+                      "position":  [
+                                       352,
+                                       688
+                                   ],
+                      "id":  "8f01a26d-6fc3-4afb-8983-365179b72d71",
+                      "name":  "Send an Email1",
+                      "webhookId":  "cde725d3-f276-4d55-ae12-fb43a3d1129b",
+                      "credentials":  {
+                                          "smtp":  {
+                                                       "id":  "of1LlaIZeqtVQp52",
+                                                       "name":  "SMTP account"
+                                                   }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "fromEmail":  "Travel SE Asia \u003cnameless2k5@gmail.com\u003e",
+                                         "toEmail":  "={{ $json.body.customer_email }}",
+                                         "subject":  "=Xác nhận đặt Bàn Nhà Hàng thành công - Travel SE Asia",
+                                         "html":  "=\u003c!DOCTYPE html\u003e\n\u003chtml\u003e\n\u003cbody style=\"font-family: Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px;\"\u003e\n    \u003cdiv style=\"background-color: #ffffff; max-width: 600px; margin: 0 auto; border-radius: 10px; overflow: hidden;\"\u003e\n        \u003cdiv style=\"background-color: #ef4444; color: #ffffff; padding: 20px; text-align: center;\"\u003e\n            \u003ch2 style=\"margin: 0;\"\u003eXác nhận đặt Bàn Nhà Hàng!\u003c/h2\u003e\n        \u003c/div\u003e\n        \u003cdiv style=\"padding: 30px; line-height: 1.6; color: #333333;\"\u003e\n            \u003cp\u003eXin chào \u003cstrong\u003e{{ $json.body.customer_name }}\u003c/strong\u003e,\u003c/p\u003e\n            \u003cp\u003eRất cám ơn Quý khách đã chọn nhà hàng của chúng tôi làm nơi thưởng thức ẩm thực. Chúng tôi đã nhận được thanh toán và ưu tiên giữ chỗ cho bạn.\u003c/p\u003e\n            \n            \u003ctable style=\"width: 100%; border-collapse: collapse; margin-top: 20px;\"\u003e\n                \u003ctr\u003e\u003cth style=\"background-color: #f1f5f9; padding: 10px; text-align: left; width: 40%; border: 1px solid #e2e8f0;\"\u003eVị trí / Loại Bàn\u003c/th\u003e\u003ctd style=\"padding: 10px; border: 1px solid #e2e8f0;\"\u003e{{ $json.body.service_name }}\u003c/td\u003e\u003c/tr\u003e\n                \u003ctr\u003e\u003cth style=\"background-color: #f1f5f9; padding: 10px; text-align: left; border: 1px solid #e2e8f0;\"\u003eMã Booking\u003c/th\u003e\u003ctd style=\"padding: 10px; border: 1px solid #e2e8f0;\"\u003e#{{ $json.body.booking_id }}\u003c/td\u003e\u003c/tr\u003e\n                \u003ctr\u003e\u003cth style=\"background-color: #f1f5f9; padding: 10px; text-align: left; border: 1px solid #e2e8f0;\"\u003eNgày đến tiệc\u003c/th\u003e\u003ctd style=\"padding: 10px; border: 1px solid #e2e8f0;\"\u003e{{ $json.body.check_in }}\u003c/td\u003e\u003c/tr\u003e\n                \u003ctr\u003e\u003cth style=\"background-color: #f1f5f9; padding: 10px; text-align: left; border: 1px solid #e2e8f0;\"\u003eSố lượng người\u003c/th\u003e\u003ctd style=\"padding: 10px; border: 1px solid #e2e8f0;\"\u003e{{ $json.body.quantity }} người\u003c/td\u003e\u003c/tr\u003e\n                \u003ctr\u003e\u003cth style=\"background-color: #f1f5f9; padding: 10px; text-align: left; border: 1px solid #e2e8f0;\"\u003eTổng phí / Đã cọc\u003c/th\u003e\u003ctd style=\"padding: 10px; border: 1px solid #e2e8f0;\"\u003e\u003cstrong style=\"color: #16a34a;\"\u003e{{ $json.body.total_amount }} VNĐ\u003c/strong\u003e\u003c/td\u003e\u003c/tr\u003e\n            \u003c/table\u003e\n\n            \u003cdiv style=\"background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; margin-top: 25px;\"\u003e\n                \u003ch4 style=\"margin-top: 0; color: #b91c1c;\"\u003e🍽️ Lưu ý khi đến nhà hàng:\u003c/h4\u003e\n                \u003cul style=\"margin-bottom: 0; padding-left: 20px;\"\u003e\n                    \u003cli\u003eQuý khách vui lòng đến \u003cb\u003eđúng giờ hoặc sớm 5 phút\u003c/b\u003e để đảm bảo nhà hàng phục vụ món ăn được nóng sốt và ngon miệng nhất.\u003c/li\u003e\n                    \u003cli\u003eTrường hợp Quý khách đến trễ quá 30 phút mà không báo trước, nhà hàng xin phép hủy giữ bàn để nhường chỗ cho khách khác.\u003c/li\u003e\n                    \u003cli\u003eNếu có yêu cầu đặc biệt về \u003cb\u003etrang trí tiệc\u003c/b\u003e hoặc \u003cb\u003edị ứng thức ăn\u003c/b\u003e, hệ thống sẽ tiếp nhận khi Quý khách ghi chú lúc đặt bàn.\u003c/li\u003e\n                \u003c/ul\u003e\n            \u003c/div\u003e\n            \n            \u003cp\u003eHân hạnh được đón tiếp và phục vụ Quý khách!\u003c/p\u003e\n            \u003cp\u003eTrân trọng,\u003cbr\u003e\u003cstrong\u003eĐội ngũ Quản lí Nhà Hàng - Travel SE Asia\u003c/strong\u003e\u003c/p\u003e\n        \u003c/div\u003e\n    \u003c/div\u003e\n\u003c/body\u003e\n\u003c/html\u003e\n",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.emailSend",
+                      "typeVersion":  2.1,
+                      "position":  [
+                                       352,
+                                       976
+                                   ],
+                      "id":  "152990c9-d536-42f7-af6c-659edf4c245c",
+                      "name":  "Send an Email2",
+                      "webhookId":  "cde725d3-f276-4d55-ae12-fb43a3d1129b",
+                      "credentials":  {
+                                          "smtp":  {
+                                                       "id":  "of1LlaIZeqtVQp52",
+                                                       "name":  "SMTP account"
+                                                   }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "rule":  {
+                                                      "interval":  [
+                                                                       {
+                                                                           "triggerAtHour":  "={{ 0 }}",
+                                                                           "triggerAtMinute":  "={{ 0 }}"
+                                                                       }
+                                                                   ]
+                                                  }
+                                     },
+                      "type":  "n8n-nodes-base.scheduleTrigger",
+                      "typeVersion":  1.3,
+                      "position":  [
+                                       -1472,
+                                       192
+                                   ],
+                      "id":  "1defcd3e-c9c9-414a-b366-48f6cde3e3e1",
+                      "name":  "Schedule Trigger"
+                  },
+                  {
+                      "parameters":  {
+                                         "promptType":  "define",
+                                         "text":  "=Chủ đề: {{ $(\u0027Random Topic \u0026 Blog Type\u0027).item.json.topic }} - {{ $(\u0027Random Topic \u0026 Blog Type\u0027).item.json.blog_type }}\n\nDữ liệu tham khảo từ Tavily: {{ JSON.stringify($node[\"Tavily Search\"].json.results) }}\n\nViết bài blog theo đúng chủ đề và định dạng yêu cầu.",
+                                         "options":  {
+                                                         "systemMessage":  "Bạn là một travel blogger người Việt với phong cách viết tự nhiên, gần gũi, hài hước nhẹ. Bạn đã đi khắp Đông Nam Á và chia sẻ kinh nghiệm thực tế.\n\nYÊU CẦU BẮT BUỘC:\n1. Dòng đầu tiên PHẢI là: TIÊU_ĐỀ: [tiêu đề cụ thể, hấp dẫn, liên quan đúng chủ đề được yêu cầu]\n2. Nội dung bài viết: khoảng 180-220 chữ, viết như người thật chia sẻ trải nghiệm\n3. Giọng văn: dùng \"mình\", \"bạn\", tự nhiên như đang kể chuyện với bạn bè, có thể dùng emoji 1-2 cái\n4. Cấu trúc: 1 đoạn mở (gây tò mò), 2-3 đoạn nội dung chính, 1 câu kết thúc\n5. KHÔNG dùng markdown heading (##), KHÔNG liệt kê bullet points\n6. Tiêu đề và nội dung PHẢI khớp nhau - nếu tiêu đề về ẩm thực thì nội dung về ẩm thực\n7. KHÔNG viết lời dẫn hay giải thích nào trước TIÊU_ĐỀ:"
+                                                     }
+                                     },
+                      "type":  "@n8n/n8n-nodes-langchain.agent",
+                      "typeVersion":  3.1,
+                      "position":  [
+                                       -880,
+                                       192
+                                   ],
+                      "id":  "4128f131-ad2c-4ab2-978e-9acfcfc37a71",
+                      "name":  "AI Agent3"
+                  },
+                  {
+                      "parameters":  {
+                                         "modelName":  "models/gemini-flash-lite-latest",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+                      "typeVersion":  1,
+                      "position":  [
+                                       -896,
+                                       368
+                                   ],
+                      "id":  "2261b3f7-4bb1-4a53-a99c-2c9447e4838b",
+                      "name":  "Google Gemini Chat Model3",
+                      "credentials":  {
+                                          "googlePalmApi":  {
+                                                                "id":  "Bjh8KyG3outSLUqE",
+                                                                "name":  "Google Gemini(PaLM) Api account"
+                                                            }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "schema":  {
+                                                        "__rl":  true,
+                                                        "mode":  "list",
+                                                        "value":  "public"
+                                                    },
+                                         "table":  {
+                                                       "__rl":  true,
+                                                       "value":  "blogs",
+                                                       "mode":  "list",
+                                                       "cachedResultName":  "blogs"
+                                                   },
+                                         "columns":  {
+                                                         "mappingMode":  "defineBelow",
+                                                         "value":  {
+                                                                       "is_published":  true,
+                                                                       "title":  "={{ $node[\"AI Agent3\"].json.output.split(\u0027\\n\u0027)[0].replace(\u0027TIÊU_ĐỀ: \u0027, \u0027\u0027).trim() }}",
+                                                                       "content":  "={{ $node[\"AI Agent3\"].json.output.split(\u0027\\n\u0027).slice(1).join(\u0027\\n\u0027).trim() }}",
+                                                                       "cover_url":  "={{ $node[\"Get Cover Image\"].json.photos[0].src.large2x }}",
+                                                                       "created_at":  "={{ DateTime.now().setZone(\u0027Asia/Ho_Chi_Minh\u0027).toISO() }}"
+                                                                   },
+                                                         "matchingColumns":  [
+                                                                                 "id"
+                                                                             ],
+                                                         "schema":  [
+                                                                        {
+                                                                            "id":  "id",
+                                                                            "displayName":  "id",
+                                                                            "required":  false,
+                                                                            "defaultMatch":  true,
+                                                                            "display":  true,
+                                                                            "type":  "number",
+                                                                            "canBeUsedToMatch":  true,
+                                                                            "removed":  true
+                                                                        },
+                                                                        {
+                                                                            "id":  "title",
+                                                                            "displayName":  "title",
+                                                                            "required":  true,
+                                                                            "defaultMatch":  false,
+                                                                            "display":  true,
+                                                                            "type":  "string",
+                                                                            "canBeUsedToMatch":  true
+                                                                        },
+                                                                        {
+                                                                            "id":  "content",
+                                                                            "displayName":  "content",
+                                                                            "required":  true,
+                                                                            "defaultMatch":  false,
+                                                                            "display":  true,
+                                                                            "type":  "string",
+                                                                            "canBeUsedToMatch":  true
+                                                                        },
+                                                                        {
+                                                                            "id":  "cover_url",
+                                                                            "displayName":  "cover_url",
+                                                                            "required":  false,
+                                                                            "defaultMatch":  false,
+                                                                            "display":  true,
+                                                                            "type":  "string",
+                                                                            "canBeUsedToMatch":  true
+                                                                        },
+                                                                        {
+                                                                            "id":  "is_published",
+                                                                            "displayName":  "is_published",
+                                                                            "required":  false,
+                                                                            "defaultMatch":  false,
+                                                                            "display":  true,
+                                                                            "type":  "boolean",
+                                                                            "canBeUsedToMatch":  true
+                                                                        },
+                                                                        {
+                                                                            "id":  "created_at",
+                                                                            "displayName":  "created_at",
+                                                                            "required":  false,
+                                                                            "defaultMatch":  false,
+                                                                            "display":  true,
+                                                                            "type":  "dateTime",
+                                                                            "canBeUsedToMatch":  true
+                                                                        },
+                                                                        {
+                                                                            "id":  "updated_at",
+                                                                            "displayName":  "updated_at",
+                                                                            "required":  false,
+                                                                            "defaultMatch":  false,
+                                                                            "display":  true,
+                                                                            "type":  "dateTime",
+                                                                            "canBeUsedToMatch":  true
+                                                                        }
+                                                                    ],
+                                                         "attemptToConvertTypes":  false,
+                                                         "convertFieldsToString":  false
+                                                     },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.postgres",
+                      "typeVersion":  2.6,
+                      "position":  [
+                                       -368,
+                                       192
+                                   ],
+                      "id":  "22b315f2-22ee-497f-898b-cb39d0c45810",
+                      "name":  "Insert rows in a table1",
+                      "credentials":  {
+                                          "postgres":  {
+                                                           "id":  "jvwLTdJYg6WcA4ek",
+                                                           "name":  "Postgres account"
+                                                       }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "url":  "=https://api.pexels.com/v1/search",
+                                         "authentication":  "genericCredentialType",
+                                         "genericAuthType":  "httpHeaderAuth",
+                                         "sendQuery":  true,
+                                         "queryParameters":  {
+                                                                 "parameters":  [
+                                                                                    {
+                                                                                        "name":  "query",
+                                                                                        "value":  "={{ $(\u0027Random Topic \u0026 Blog Type\u0027).item.json.topic }} {{ $(\u0027Random Topic \u0026 Blog Type\u0027).item.json.blog_type }}"
+                                                                                    },
+                                                                                    {
+                                                                                        "name":  "per_page\t",
+                                                                                        "value":  "1"
+                                                                                    },
+                                                                                    {
+                                                                                        "name":  "orientation",
+                                                                                        "value":  "landscape"
+                                                                                    }
+                                                                                ]
+                                                             },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.4,
+                      "position":  [
+                                       -560,
+                                       192
+                                   ],
+                      "id":  "df30e261-c128-4afa-acd7-821db9ae77bf",
+                      "name":  "Get Cover Image",
+                      "credentials":  {
+                                          "httpHeaderAuth":  {
+                                                                 "id":  "MfEyDTeGP3t0D3ra",
+                                                                 "name":  "Pexels API account"
+                                                             }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "POST",
+                                         "url":  "https://api.tavily.com/search",
+                                         "authentication":  "genericCredentialType",
+                                         "genericAuthType":  "httpHeaderAuth",
+                                         "sendBody":  true,
+                                         "bodyParameters":  {
+                                                                "parameters":  [
+                                                                                   {
+                                                                                       "name":  "query",
+                                                                                       "value":  "={{ $(\u0027Random Topic \u0026 Blog Type\u0027).item.json.topic }} - {{ $(\u0027Random Topic \u0026 Blog Type\u0027).item.json.blog_type }}"
+                                                                                   },
+                                                                                   {
+                                                                                       "name":  "search_depth",
+                                                                                       "value":  "basic"
+                                                                                   },
+                                                                                   {
+                                                                                       "name":  "include_raw_content",
+                                                                                       "value":  "={{ false }}"
+                                                                                   }
+                                                                               ]
+                                                            },
+                                         "options":  {
+                                                         "allowUnauthorizedCerts":  true
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.4,
+                      "position":  [
+                                       -1072,
+                                       192
+                                   ],
+                      "id":  "5cc13029-772f-4ce6-9c49-b14ef02cbfe0",
+                      "name":  "Tavily Search",
+                      "credentials":  {
+                                          "httpHeaderAuth":  {
+                                                                 "id":  "8AAb8z9n7stXLm1D",
+                                                                 "name":  "Header Auth account"
+                                                             }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "assignments":  {
+                                                             "assignments":  [
+                                                                                 {
+                                                                                     "id":  "198ac51c-53b3-4c7d-a222-a526dcc44157",
+                                                                                     "name":  "topic",
+                                                                                     "value":  "={{ [\"Hội An\", \"Đà Lạt\", \"Phú Quốc\", \"Hạ Long\", \"Sapa\", \"Bangkok Thái Lan\", \"Bali Indonesia\", \"Singapore\", \"Luang Prabang Lào\", \"Nha Trang\", \"Đà Nẵng\", \"Huế\", \"Mũi Né\", \"Côn Đảo\", \"Kuala Lumpur Malaysia\"][Math.floor(Math.random() * 15)] }}",
+                                                                                     "type":  "string"
+                                                                                 },
+                                                                                 {
+                                                                                     "id":  "33e72cc8-813b-4a7d-a55f-a4ff878f4035",
+                                                                                     "name":  "blog_type",
+                                                                                     "value":  "={{ [\"kinh nghiệm du lịch tự túc\", \"review ẩm thực đặc sản\", \"lịch trình 2 ngày 1 đêm tiết kiệm\", \"những điều cần biết khi lần đầu đến\", \"review chỗ ở giá rẻ view đẹp\", \"địa điểm check-in không phải ai cũng biết\"][Math.floor(Math.random() * 6)] }}",
+                                                                                     "type":  "string"
+                                                                                 }
+                                                                             ]
+                                                         },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.set",
+                      "typeVersion":  3.4,
+                      "position":  [
+                                       -1280,
+                                       192
+                                   ],
+                      "id":  "7e267e63-9b16-408e-8a4a-85bbff349cf7",
+                      "name":  "Random Topic \u0026 Blog Type"
+                  }
+              ],
+    "pinData":  {
+
+                },
+    "connections":  {
+                        "When chat message received":  {
+                                                           "main":  [
+                                                                        [
+                                                                            {
+                                                                                "node":  "AI Agent",
+                                                                                "type":  "main",
+                                                                                "index":  0
+                                                                            }
+                                                                        ]
+                                                                    ]
+                                                       },
+                        "Google Gemini Chat Model":  {
+                                                         "ai_languageModel":  [
+                                                                                  [
+                                                                                      {
+                                                                                          "node":  "AI Agent",
+                                                                                          "type":  "ai_languageModel",
+                                                                                          "index":  0
+                                                                                      }
+                                                                                  ]
+                                                                              ]
+                                                     },
+                        "Simple Memory":  {
+                                              "ai_memory":  [
+                                                                [
+                                                                    {
+                                                                        "node":  "AI Agent",
+                                                                        "type":  "ai_memory",
+                                                                        "index":  0
+                                                                    }
+                                                                ]
+                                                            ]
+                                          },
+                        "Execute a SQL query in Postgres":  {
+                                                                "ai_tool":  [
+                                                                                [
+                                                                                    {
+                                                                                        "node":  "AI Agent",
+                                                                                        "type":  "ai_tool",
+                                                                                        "index":  0
+                                                                                    }
+                                                                                ]
+                                                                            ]
+                                                            },
+                        "Webhook":  {
+                                        "main":  [
+                                                     [
+                                                         {
+                                                             "node":  "Append or update row in sheet",
+                                                             "type":  "main",
+                                                             "index":  0
+                                                         },
+                                                         {
+                                                             "node":  "Switch",
+                                                             "type":  "main",
+                                                             "index":  0
+                                                         }
+                                                     ]
+                                                 ]
+                                    },
+                        "Switch":  {
+                                       "main":  [
+                                                    [
+                                                        {
+                                                            "node":  "Send a text message",
+                                                            "type":  "main",
+                                                            "index":  0
+                                                        },
+                                                        {
+                                                            "node":  "Send an Email",
+                                                            "type":  "main",
+                                                            "index":  0
+                                                        }
+                                                    ],
+                                                    [
+                                                        {
+                                                            "node":  "Send a text message1",
+                                                            "type":  "main",
+                                                            "index":  0
+                                                        },
+                                                        {
+                                                            "node":  "Send an Email1",
+                                                            "type":  "main",
+                                                            "index":  0
+                                                        }
+                                                    ],
+                                                    [
+                                                        {
+                                                            "node":  "Send a text message2",
+                                                            "type":  "main",
+                                                            "index":  0
+                                                        },
+                                                        {
+                                                            "node":  "Send an Email2",
+                                                            "type":  "main",
+                                                            "index":  0
+                                                        }
+                                                    ]
+                                                ]
+                                   },
+                        "AI Agent3":  {
+                                          "main":  [
+                                                       [
+                                                           {
+                                                               "node":  "Get Cover Image",
+                                                               "type":  "main",
+                                                               "index":  0
+                                                           }
+                                                       ]
+                                                   ]
+                                      },
+                        "Google Gemini Chat Model3":  {
+                                                          "ai_languageModel":  [
+                                                                                   [
+                                                                                       {
+                                                                                           "node":  "AI Agent3",
+                                                                                           "type":  "ai_languageModel",
+                                                                                           "index":  0
+                                                                                       }
+                                                                                   ]
+                                                                               ]
+                                                      },
+                        "Insert rows in a table1":  {
+                                                        "main":  [
+                                                                     [
+
+                                                                     ]
+                                                                 ]
+                                                    },
+                        "Get Cover Image":  {
+                                                "main":  [
+                                                             [
+                                                                 {
+                                                                     "node":  "Insert rows in a table1",
+                                                                     "type":  "main",
+                                                                     "index":  0
+                                                                 }
+                                                             ]
+                                                         ]
+                                            },
+                        "Tavily Search":  {
+                                              "main":  [
+                                                           [
+                                                               {
+                                                                   "node":  "AI Agent3",
+                                                                   "type":  "main",
+                                                                   "index":  0
+                                                               }
+                                                           ]
+                                                       ]
+                                          },
+                        "Random Topic \u0026 Blog Type":  {
+                                                              "main":  [
+                                                                           [
+                                                                               {
+                                                                                   "node":  "Tavily Search",
+                                                                                   "type":  "main",
+                                                                                   "index":  0
+                                                                               }
+                                                                           ]
+                                                                       ]
+                                                          },
+                        "Schedule Trigger":  {
+                                                 "main":  [
+                                                              [
+                                                                  {
+                                                                      "node":  "Random Topic \u0026 Blog Type",
+                                                                      "type":  "main",
+                                                                      "index":  0
+                                                                  }
+                                                              ]
+                                                          ]
+                                             }
+                    },
+    "active":  true,
+    "settings":  {
+                     "executionOrder":  "v1",
+                     "binaryMode":  "separate"
+                 },
+    "versionId":  "7a5d06e5-e1ad-4e75-814d-eae390db06ff",
+    "meta":  {
+                 "templateCredsSetupCompleted":  true,
+                 "instanceId":  "552cab0612d889588b91d5e860577b5f71c5ae27fc92d1c15f4618a0119b8875"
+             },
+    "id":  "eq8tRxWCQ2b9fE2a",
+    "tags":  [
+
+             ]
+}

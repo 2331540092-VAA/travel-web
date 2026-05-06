@@ -63,7 +63,7 @@ export default function StaffScan() {
     }
   }
 
-  function onScanFailure(error: any) {
+  function onScanFailure(_error: unknown) {
     // console.warn(`Code scan error = ${error}`);
   }
 
@@ -83,9 +83,10 @@ export default function StaffScan() {
         setError(response.message || "Xác minh thất bại");
         toast.error(response.message || "Xác minh thất bại");
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } }; message?: string };
       const msg =
-        err.response?.data?.message || err.message || "Lỗi kết nối server";
+        e.response?.data?.message || e.message || "Lỗi kết nối server";
       setError(msg);
       toast.error(msg);
     } finally {

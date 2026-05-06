@@ -4,26 +4,51 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Review;
-use App\Models\Booking;
 use App\Models\Tour;
 use App\Models\Hotel;
 use App\Models\Restaurant;
+use App\Models\Booking;
 use Illuminate\Http\Request;
 
 class ReviewController extends Controller
 {
+    /**
+     * Lấy user hiện tại theo cơ chế auth/session đang dùng trong project.
+     */
+    private function resolveUserId(Request $request): ?int
+    {
+        $userId = auth()->id() ?? session('user_id') ?? $request->input('user_id');
+        return $userId ? (int) $userId : null;
+    }
+
+    /**
+     * User chỉ được review khi có booking đã thanh toán cho đúng dịch vụ.
+     */
+    private function hasPaidBooking(int $userId, string $type, int $entityId): bool
+    {
+        return Booking::query()
+            ->where('user_id', $userId)
+            ->where('booking_type', $type)
+            ->where('target_id', $entityId)
+            ->where('status', 'paid')
+            ->exists();
+    }
+
+    /**
+     * Xác định Model dựa trên loại dịch vụ
+     */
     private function getModelClass(string $type): ?string
     {
         return match ($type) {
-            'tour' => Tour::class,
-            'hotel' => Hotel::class,
+            'tour'       => Tour::class,
+            'hotel'      => Hotel::class,
             'restaurant' => Restaurant::class,
-            default => null,
+            default      => null,
         };
     }
 
     /**
-     * Lấy danh sách reviews theo entity
+     * Lấy danh sách bình luận (Chỉ lấy những cái đã được duyệt/hiện)
      */
     public function index(Request $request)
     {
@@ -36,16 +61,16 @@ class ReviewController extends Controller
 
         $reviews = Review::where('reviewable_type', $modelClass)
             ->where('reviewable_id', $request->id)
-            ->where('is_approved', true)
+            ->where('is_approved', true) // <--- QUAN TRỌNG: Chỉ lấy bình luận đang hiện
             ->with('user:id,name,avatar_url')
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->paginate(10);
 
         return response()->json($reviews);
     }
 
     /**
-     * Tạo review mới - chỉ user đã paid mới được review
+     * Gửi bình luận mới
      */
     public function store(Request $request)
     {
@@ -56,89 +81,82 @@ class ReviewController extends Controller
             'comment' => 'nullable|string|max:1000',
         ]);
 
-        $userId = auth()->id() ?? $request->user_id;
+        $userId = $this->resolveUserId($request);
         if (!$userId) {
-            return response()->json(['message' => 'Unauthenticated'], 401);
+            return response()->json(['message' => 'Bạn cần đăng nhập để bình luận'], 401);
         }
 
-        $modelClass = $this->getModelClass($request->type);
-
-        // Kiểm tra user đã có booking paid cho entity này chưa
-        $hasPaidBooking = Booking::where('user_id', $userId)
-            ->where('booking_type', $request->type)
-            ->where('target_id', $request->id)
-            ->where('status', 'paid')
-            ->exists();
-
-        if (!$hasPaidBooking) {
+        if (!$this->hasPaidBooking($userId, $request->type, (int) $request->id)) {
             return response()->json([
-                'message' => 'Bạn cần có booking đã thanh toán để đánh giá'
+                'message' => 'Bạn chỉ có thể đánh giá sau khi thanh toán dịch vụ này',
             ], 403);
         }
 
-        // Kiểm tra đã review chưa
-        $existing = Review::where('user_id', $userId)
-            ->where('reviewable_type', $modelClass)
-            ->where('reviewable_id', $request->id)
-            ->first();
+        $modelClass = $this->getModelClass($request->type);
+        $entity = $modelClass::find($request->id);
 
-        if ($existing) {
-            // Cập nhật review cũ
-            $existing->update([
-                'rating'  => $request->rating,
-                'comment' => $request->comment,
-            ]);
-            $review = $existing;
-        } else {
-            $review = Review::create([
+        if (!$entity) {
+            return response()->json(['message' => 'Đối tượng không tồn tại'], 404);
+        }
+
+        // Tạo hoặc cập nhật review của User cho đối tượng này
+        $review = Review::updateOrCreate(
+            [
                 'user_id'         => $userId,
                 'reviewable_type' => $modelClass,
                 'reviewable_id'   => $request->id,
-                'rating'          => $request->rating,
-                'comment'         => $request->comment,
-            ]);
-        }
+            ],
+            [
+                'rating'      => $request->rating,
+                'comment'     => $request->comment,
+                'is_approved' => true, // Mặc định cho hiện luôn, hoặc để false nếu muốn Admin duyệt trước
+            ]
+        );
 
-        // Cập nhật rating trung bình
-        $this->updateEntityRating($modelClass, $request->id);
+        // Cập nhật lại điểm trung bình cho Tour/Hotel/Restaurant
+        $this->updateEntityRating($entity);
 
-        $review->load('user:id,name,avatar_url');
-
-        return response()->json($review, 201);
+        return response()->json([
+            'message' => 'Đánh giá thành công',
+            'data'    => $review->load('user:id,name,avatar_url')
+        ], 201);
     }
 
     /**
-     * Cập nhật rating trung bình của entity
+     * Tính toán lại điểm trung bình và số lượng review
      */
-    private function updateEntityRating(string $modelClass, int $entityId)
+    private function updateEntityRating($entity)
     {
+        $modelClass = get_class($entity);
+        
         $stats = Review::where('reviewable_type', $modelClass)
-            ->where('reviewable_id', $entityId)
-            ->where('is_approved', true)
+            ->where('reviewable_id', $entity->id)
+            ->where('is_approved', true) // Chỉ tính điểm dựa trên bình luận đang hiển thị
             ->selectRaw('AVG(rating) as avg_rating, COUNT(*) as total')
             ->first();
 
-        $avg = round($stats->avg_rating ?? 0, 1);
         $count = $stats->total ?? 0;
+        $updateData = ['reviews_count' => $count];
 
-        $ratingText = match (true) {
-            $avg >= 4.5 => 'Tuyệt vời',
-            $avg >= 4.0 => 'Rất tốt',
-            $avg >= 3.5 => 'Tốt',
-            $avg >= 3.0 => 'Khá',
-            $avg >= 2.0 => 'Trung bình',
-            default     => 'Chưa đánh giá',
-        };
+        // Nếu không phải là Tour (Hotel/Restaurant cần điểm rating)
+        if ($modelClass !== Tour::class) {
+            $avg = round($stats->avg_rating ?? 0, 1);
+            $updateData['rating'] = $avg;
+            $updateData['rating_text'] = match (true) {
+                $avg >= 4.5 => 'Tuyệt vời',
+                $avg >= 4.0 => 'Rất tốt',
+                $avg >= 3.5 => 'Tốt',
+                $avg >= 3.0 => 'Khá',
+                $avg >= 2.0 => 'Trung bình',
+                default     => 'Chưa đánh giá',
+            };
+        }
 
-        $modelClass::where('id', $entityId)->update([
-            'rating'        => $avg,
-            'reviews_count' => $count,
-            'rating_text'   => $ratingText,
-        ]);
+        $entity->update($updateData);
     }
 
     /**
-     * Kiểm tra user có thể review entity này không
+     * Kiểm tra quyền review cho Frontend
      */
     public function canReview(Request $request)
     {
@@ -147,31 +165,20 @@ class ReviewController extends Controller
             'id'   => 'required|integer',
         ]);
 
-        $userId = auth()->id() ?? $request->user_id;
-        if (!$userId) {
-            return response()->json(['can_review' => false, 'reason' => 'not_logged_in']);
-        }
+        $userId = $this->resolveUserId($request);
+        if (!$userId) return response()->json(['can_review' => false, 'reason' => 'unauthorized']);
 
-        $modelClass = $this->getModelClass($request->type);
-
-        $hasPaidBooking = Booking::where('user_id', $userId)
-            ->where('booking_type', $request->type)
-            ->where('target_id', $request->id)
-            ->where('status', 'paid')
-            ->exists();
-
-        if (!$hasPaidBooking) {
-            return response()->json(['can_review' => false, 'reason' => 'no_paid_booking']);
-        }
-
-        $hasReviewed = Review::where('user_id', $userId)
-            ->where('reviewable_type', $modelClass)
-            ->where('reviewable_id', $request->id)
-            ->exists();
+        $type = $request->type;
+        $entityId = (int) $request->id;
+        $canReview = $this->hasPaidBooking($userId, $type, $entityId);
+        $modelClass = $this->getModelClass($type);
 
         return response()->json([
-            'can_review'   => true,
-            'has_reviewed' => $hasReviewed,
+            'can_review'   => $canReview,
+            'has_reviewed' => Review::where('user_id', $userId)
+                                ->where('reviewable_type', $modelClass)
+                                ->where('reviewable_id', $entityId)
+                                ->exists(),
         ]);
     }
 }

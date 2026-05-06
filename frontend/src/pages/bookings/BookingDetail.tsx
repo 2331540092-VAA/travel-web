@@ -4,16 +4,66 @@ import { QRCodeCanvas } from "qrcode.react";
 import { apiGet, apiPost, API_BASE } from "../../service/api";
 import toast from "react-hot-toast";
 
+interface Booking {
+  id: number;
+  user_id: number;
+  booking_type: string;
+  target_id: number;
+  check_in?: string;
+  check_out?: string;
+  booking_date: string;
+  quantity: number;
+  total_amount: number;
+  payment_type?: string;
+  status: string;
+  note?: string;
+  created_at: string;
+  tour?: { name: string };
+  hotel?: { name: string };
+  restaurant?: { name: string };
+  hotel_room?: { name: string };
+  restaurant_table?: { name: string };
+  item_name?: string;
+  title?: string;
+}
+
 export default function BookingDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [booking, setBooking] = useState<any>(null);
+  const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
+  const [cancelling, setCancelling] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [selectedReason, setSelectedReason] = useState("");
+  const [customReason, setCustomReason] = useState("");
+
+  const CANCEL_REASONS = [
+    "Thay đổi kế hoạch cá nhân",
+    "Tìm được dịch vụ tốt hơn",
+    "Lý do sức khỏe / bất khả kháng",
+    "Công việc đột xuất",
+    "Điều kiện thời tiết không thuận lợi",
+    "Đặt nhầm / sai thông tin",
+    "Lý do khác",
+  ];
+
+  const formatDateTime = (value?: string) => {
+    if (!value) return "-";
+
+    return new Date(value).toLocaleString("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+  };
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user") || "{}");
 
-    apiGet<any>(`/bookings/${id}?user_id=${user.id}`)
+    apiGet<{ data?: Booking } & Booking>(`/bookings/${id}?user_id=${user.id}`)
       .then((data) => setBooking(data.data ?? data))
       .catch((err) => console.error(err))
       .finally(() => setLoading(false));
@@ -22,30 +72,49 @@ export default function BookingDetail() {
   const handlePayment = () => {
     if (!booking) return;
 
-    // Chuyển đến trang thanh toán
-    navigate(
-      `/payment?bookingId=${booking.id}&tourId=${booking.target_id}&price=${
-        booking.total_amount || 0
-      }&people=${booking.quantity || 1}&date=${booking.booking_date}`,
-    );
+    const params = new URLSearchParams({
+      bookingId: String(booking.id),
+      price: String(booking.total_amount || 0),
+      people: String(booking.quantity || 1),
+      date: String(booking.booking_date || ""),
+    });
+
+    if (booking.booking_type === "tour") {
+      params.set("tourId", String(booking.target_id || ""));
+    } else {
+      params.set("serviceType", String(booking.booking_type || ""));
+      params.set("serviceId", String(booking.target_id || ""));
+    }
+
+    navigate(`/payment?${params.toString()}`);
   };
 
   const handleCancel = async () => {
-    if (!window.confirm("Bạn chắc chắn muốn hủy booking này?")) {
+    const reason = selectedReason === "Lý do khác"
+      ? (customReason.trim() || "Lý do khác")
+      : selectedReason;
+
+    if (!reason) {
+      toast.error("Vui lòng chọn lý do hủy");
       return;
     }
 
     const user = JSON.parse(localStorage.getItem("user") || "{}");
 
     try {
-      const data = await apiPost<any>(
+      setCancelling(true);
+      const data = await apiPost<{ booking?: Booking } & Booking>(
         `/bookings/${id}/cancel?user_id=${user.id}`,
-        {},
+        { cancel_reason: reason },
       );
       toast.success("Đã hủy booking thành công");
-      setBooking(data.booking || data);
-    } catch (error: any) {
-      toast.error("Lỗi: " + error.message);
+      setBooking(data.booking ?? data);
+      setShowCancelModal(false);
+      window.dispatchEvent(new Event("notification:refresh"));
+    } catch (error) {
+      toast.error("Lỗi: " + (error instanceof Error ? error.message : "Không xác định"));
+    } finally {
+      setCancelling(false);
     }
   };
 
@@ -64,19 +133,35 @@ export default function BookingDetail() {
       </div>
     );
 
-  const statusColors: any = {
+  const statusColors: Record<string, string> = {
     pending: "bg-yellow-100 text-yellow-800",
     confirmed: "bg-blue-100 text-blue-800",
     paid: "bg-green-100 text-green-800",
     cancelled: "bg-red-100 text-red-800",
   };
 
-  const statusLabels: any = {
+  const statusLabels: Record<string, string> = {
     pending: "Chờ thanh toán",
     confirmed: "Đã xác nhận",
     paid: "Đã thanh toán",
     cancelled: "Đã hủy",
   };
+
+  const serviceName =
+    booking.booking_type === 'tour'
+      ? (booking.tour?.name || 'Tour du lịch')
+      : booking.booking_type === 'hotel'
+        ? (booking.hotel?.name || 'Khách sạn')
+        : booking.booking_type === 'restaurant'
+          ? (booking.restaurant?.name || 'Nhà hàng')
+          : (booking.item_name || booking.title || `Dịch vụ #${booking.target_id}`);
+
+  const itemName =
+    booking.booking_type === 'hotel'
+      ? (booking.hotel_room?.name || '')
+      : booking.booking_type === 'restaurant'
+        ? (booking.restaurant_table?.name || '')
+        : '';
 
   return (
     <div className="max-w-2xl mx-auto py-12">
@@ -86,6 +171,9 @@ export default function BookingDetail() {
           Chi tiết booking
         </h1>
         <p className="text-gray-600">ID: {booking.id}</p>
+        <p className="text-sm text-gray-500 mt-1">
+          Thời gian đặt thực tế: {formatDateTime(booking.created_at)}
+        </p>
       </div>
 
       {/* Main Card */}
@@ -116,6 +204,16 @@ export default function BookingDetail() {
                 </span>
               </div>
 
+              <div>
+                <p className="text-xs text-gray-500 uppercase font-semibold">
+                  Tên dịch vụ
+                </p>
+                <p className="text-lg font-bold text-gray-800">{serviceName}</p>
+                {itemName && (
+                  <p className="text-sm text-blue-600 font-semibold mt-0.5">{itemName}</p>
+                )}
+              </div>
+
               <div className="grid grid-cols-2 gap-y-6 gap-x-4">
                 <div>
                   <p className="text-xs text-gray-500 uppercase font-semibold">
@@ -134,18 +232,42 @@ export default function BookingDetail() {
                     #{booking.id}
                   </p>
                 </div>
-                <div>
-                  <p className="text-xs text-gray-500 uppercase font-semibold">
-                    Lịch Trình
-                  </p>
-                  <p className="font-bold text-gray-800">
-                    {booking.check_in
-                      ? new Date(booking.check_in).toLocaleDateString("vi-VN")
-                      : new Date(booking.booking_date).toLocaleDateString(
-                          "vi-VN",
-                        )}
-                  </p>
-                </div>
+
+                {/* Tour / Hotel: hiển thị check-in → check-out */}
+                {(booking.booking_type === "tour" || booking.booking_type === "hotel") && booking.check_in ? (
+                  <>
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase font-semibold">
+                        {booking.booking_type === "hotel" ? "Nhận Phòng" : "Ngày Đi"}
+                      </p>
+                      <p className="font-bold text-gray-800">
+                        {new Date(booking.check_in).toLocaleDateString("vi-VN")}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase font-semibold">
+                        {booking.booking_type === "hotel" ? "Trả Phòng" : "Ngày Về"}
+                      </p>
+                      <p className="font-bold text-gray-800">
+                        {booking.check_out
+                          ? new Date(booking.check_out).toLocaleDateString("vi-VN")
+                          : "—"}
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase font-semibold">
+                      Lịch Trình
+                    </p>
+                    <p className="font-bold text-gray-800">
+                      {booking.check_in
+                        ? new Date(booking.check_in).toLocaleDateString("vi-VN")
+                        : new Date(booking.booking_date).toLocaleDateString("vi-VN")}
+                    </p>
+                  </div>
+                )}
+
                 <div>
                   <p className="text-xs text-gray-500 uppercase font-semibold">
                     Số Lượng
@@ -181,6 +303,16 @@ export default function BookingDetail() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <div className="space-y-4">
               <div>
+                <p className="text-gray-600 text-sm">Tên dịch vụ</p>
+                <p className="text-lg font-semibold text-gray-800 capitalize">
+                  {serviceName}
+                </p>
+                {itemName && (
+                  <p className="text-sm text-blue-600 font-medium mt-0.5">{itemName}</p>
+                )}
+              </div>
+
+              <div>
                 <p className="text-gray-600 text-sm">Loại đặt</p>
                 <p className="text-lg font-semibold text-gray-800 capitalize">
                   {booking.booking_type}
@@ -208,9 +340,7 @@ export default function BookingDetail() {
 
             <div className="space-y-4">
               <div>
-                <p className="text-gray-600 text-sm">
-                  Mã tham chiếu (Target ID)
-                </p>
+                <p className="text-gray-600 text-sm">Mã dịch vụ</p>
                 <p className="text-lg font-semibold text-gray-800">
                   {booking.target_id}
                 </p>
@@ -219,7 +349,14 @@ export default function BookingDetail() {
               <div>
                 <p className="text-gray-600 text-sm">Thời gian tạo HĐ</p>
                 <p className="text-lg font-semibold text-gray-800">
-                  {new Date(booking.created_at).toLocaleString("vi-VN")}
+                  {formatDateTime(booking.created_at)}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-gray-600 text-sm">Ngày sử dụng dịch vụ</p>
+                <p className="text-lg font-semibold text-gray-800">
+                  {formatDateTime(booking.booking_date)}
                 </p>
               </div>
             </div>
@@ -261,7 +398,11 @@ export default function BookingDetail() {
               </button>
 
               <button
-                onClick={handleCancel}
+                onClick={() => {
+                  setSelectedReason("");
+                  setCustomReason("");
+                  setShowCancelModal(true);
+                }}
                 className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-lg transition"
               >
                 ❌ Hủy booking
@@ -277,6 +418,19 @@ export default function BookingDetail() {
 
           {booking.status === "paid" && (
             <button
+              onClick={() => {
+                setSelectedReason("");
+                setCustomReason("");
+                setShowCancelModal(true);
+              }}
+              className="flex-1 border border-red-300 text-red-600 hover:bg-red-50 font-semibold py-3 rounded-lg transition"
+            >
+              ❌ Yêu cầu hủy booking
+            </button>
+          )}
+
+          {booking.status === "paid" && (
+            <button
               onClick={async () => {
                 const user = JSON.parse(localStorage.getItem("user") || "{}");
                 try {
@@ -285,37 +439,23 @@ export default function BookingDetail() {
                     `${API_BASE}/bookings/${booking.id}/pdf?user_id=${user.id}`,
                     {
                       method: "GET",
-                      headers: { Accept: "application/pdf" },
-                      credentials: "omit",
+                      credentials: "include",
                     },
                   );
                   if (!response.ok) throw new Error("Không thể tải hóa đơn");
 
                   const blob = await response.blob();
-
-                  await new Promise<void>((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => {
-                      if (reader.result) {
-                        const a = document.createElement("a");
-                        a.style.display = "none";
-                        a.href = reader.result as string;
-                        a.download = `HoaDon_${booking.id}.pdf`;
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                        resolve();
-                      } else {
-                        reject(new Error("Không thể tạo dữ liệu tải xuống"));
-                      }
-                    };
-                    reader.onerror = () =>
-                      reject(new Error("Lỗi đọc file (FileReader)"));
-                    reader.readAsDataURL(blob);
-                  });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = `HoaDon_${booking.id}.pdf`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
 
                   toast.success("Tải hóa đơn thành công!", { id: "pdf" });
-                } catch (error) {
+                } catch {
                   toast.error(
                     "Lỗi hệ thống khi tải PDF. Vui lòng thử lại sau.",
                     { id: "pdf" },
@@ -336,6 +476,66 @@ export default function BookingDetail() {
           </button>
         </div>
       </div>
+
+      {/* Cancel Reason Modal */}
+      {showCancelModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6">
+            <h2 className="text-xl font-bold text-gray-800 mb-1">Lý do hủy booking</h2>
+            <p className="text-sm text-gray-500 mb-5">Vui lòng chọn lý do để giúp chúng tôi cải thiện dịch vụ.</p>
+
+            <div className="space-y-3 mb-5">
+              {CANCEL_REASONS.map((reason) => (
+                <label
+                  key={reason}
+                  className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition ${
+                    selectedReason === reason
+                      ? "border-red-400 bg-red-50"
+                      : "border-gray-200 hover:border-gray-300"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="cancel_reason"
+                    value={reason}
+                    checked={selectedReason === reason}
+                    onChange={() => setSelectedReason(reason)}
+                    className="accent-red-500"
+                  />
+                  <span className="text-sm text-gray-700">{reason}</span>
+                </label>
+              ))}
+            </div>
+
+            {selectedReason === "Lý do khác" && (
+              <textarea
+                value={customReason}
+                onChange={(e) => setCustomReason(e.target.value)}
+                placeholder="Nhập lý do cụ thể của bạn..."
+                rows={3}
+                className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-300 mb-4 resize-none"
+              />
+            )}
+
+            <div className="flex gap-3 mt-2">
+              <button
+                onClick={() => setShowCancelModal(false)}
+                className="flex-1 border border-gray-300 text-gray-600 hover:bg-gray-50 font-semibold py-3 rounded-xl transition"
+                disabled={cancelling}
+              >
+                Đóng
+              </button>
+              <button
+                onClick={handleCancel}
+                disabled={cancelling || !selectedReason || (selectedReason === "Lý do khác" && !customReason.trim())}
+                className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-red-300 text-white font-semibold py-3 rounded-xl transition"
+              >
+                {cancelling ? "Đang xử lý..." : "Xác nhận hủy"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

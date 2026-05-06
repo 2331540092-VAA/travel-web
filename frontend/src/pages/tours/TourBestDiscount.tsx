@@ -1,6 +1,16 @@
 import { useEffect, useState } from "react";
 import TourCard from "../tours/TourCard";
 
+interface TourDeparture {
+  id: number;
+  departure_date: string;
+  status: string;
+  price?: number;
+  discount_percent?: number;
+  capacity?: number;
+  booked?: number;
+}
+
 interface Tour {
   id: number;
   name: string;
@@ -8,7 +18,7 @@ interface Tour {
   days?: number;
   price?: number;
   discount_percent?: number;
-  departures?: any[];
+  departures?: TourDeparture[];
   departure_location?: string;
   transport?: string;
 }
@@ -18,7 +28,7 @@ export default function TourBestDiscount() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/api/tours")
+    fetch(`${import.meta.env.VITE_API_BASE ? import.meta.env.VITE_API_BASE + '/api' : 'http://127.0.0.1:8000/api'}/tours`)
       .then((res) => res.json())
       .then((data) => {
         const tours: Tour[] = data.data ?? data;

@@ -1,51 +1,41 @@
 import { Link } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { apiPost, apiGet } from "../../service/api";
+import { useState } from "react";
 
-export default function LocationCard({ location }: any) {
-  const [liked, setLiked] = useState(false);
+interface LocationData {
+  id: number;
+  name: string;
+  image_url: string;
+  address?: string;
+  tag?: string;
+  hotels_count?: number;
+  tours_count?: number;
+}
 
-  useEffect(() => {
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
-    if (user.id) {
-      apiGet<any>(`/favorites/check?type=location&id=${location.id}&user_id=${user.id}`)
-        .then((data) => setLiked(data.is_favorite))
-        .catch(() => {});
-    } else {
-      const favs: number[] = JSON.parse(
-        localStorage.getItem("favorite_locations") || "[]",
-      );
-      setLiked(favs.includes(location.id));
-    }
-  }, [location.id]);
+export default function LocationCard({ location }: { location: LocationData }) {
+  const [liked, setLiked] = useState(() => {
+    const favs: number[] = JSON.parse(
+      localStorage.getItem("favorite_locations") || "[]",
+    );
+    return favs.includes(location.id);
+  });
 
-  const toggleFavorite = async (e: React.MouseEvent) => {
-    e.preventDefault();
+  const toggleFavorite = (e: React.MouseEvent) => {
+    e.preventDefault(); // chặn Link
     e.stopPropagation();
 
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
-    if (user.id) {
-      try {
-        const data = await apiPost<any>("/favorites/toggle", {
-          type: "location",
-          id: location.id,
-          user_id: user.id,
-        });
-        setLiked(data.is_favorite);
-      } catch {}
+    let favs: number[] = JSON.parse(
+      localStorage.getItem("favorite_locations") || "[]",
+    );
+
+    if (favs.includes(location.id)) {
+      favs = favs.filter((id) => id !== location.id);
+      setLiked(false);
     } else {
-      let favs: number[] = JSON.parse(
-        localStorage.getItem("favorite_locations") || "[]",
-      );
-      if (favs.includes(location.id)) {
-        favs = favs.filter((id) => id !== location.id);
-        setLiked(false);
-      } else {
-        favs.push(location.id);
-        setLiked(true);
-      }
-      localStorage.setItem("favorite_locations", JSON.stringify(favs));
+      favs.push(location.id);
+      setLiked(true);
     }
+
+    localStorage.setItem("favorite_locations", JSON.stringify(favs));
   };
 
   return (
@@ -83,10 +73,10 @@ export default function LocationCard({ location }: any) {
         <p className="text-sm text-gray-500 mb-3">{location.address}</p>
 
         <div className="flex gap-4 text-sm text-gray-600">
-          {location.hotels_count > 0 && (
+          {(location.hotels_count ?? 0) > 0 && (
             <span>🏨 {location.hotels_count} Hotels</span>
           )}
-          {location.tours_count > 0 && <span>🧭 Tours</span>}
+          {(location.tours_count ?? 0) > 0 && <span>🧭 Tours</span>}
         </div>
       </div>
     </Link>

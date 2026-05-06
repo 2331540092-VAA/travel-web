@@ -1,4 +1,6 @@
-export const API_BASE = "http://127.0.0.1:8000/api";
+export const API_BASE = import.meta.env.VITE_API_BASE
+  ? `${import.meta.env.VITE_API_BASE}/api`
+  : "http://127.0.0.1:8000/api";
 
 type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
 
@@ -84,4 +86,8 @@ export function apiPut<T>(endpoint: string, body: any, isFormData = false) {
 
 export function apiDelete<T>(endpoint: string) {
   return apiClient<T>(endpoint, { method: "DELETE" });
+}
+
+export function apiPatch<T>(endpoint: string, body: any, isFormData = false) {
+  return apiClient<T>(endpoint, { method: "PATCH", body, isFormData });
 }

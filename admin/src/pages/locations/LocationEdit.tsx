@@ -11,7 +11,6 @@ export default function LocationEdit() {
   const [form, setForm] = useState({
     country_id: "",
     name: "",
-    type: "",
     description: "",
     content: "",
     address: "",
@@ -40,7 +39,6 @@ export default function LocationEdit() {
       setForm({
         country_id: data.country_id ? String(data.country_id) : "",
         name: data.name || "",
-        type: data.type || "",
         description: data.description || "",
         content: data.content || "",
         address: data.address || "",
@@ -93,8 +91,11 @@ export default function LocationEdit() {
     <div className="p-6 max-w-xl mx-auto space-y-6">
       {" "}
       <h1 className="text-2xl font-bold text-gray-800">Edit Location</h1>
-      <form onSubmit={handleSubmit} className="bg-white p-6 md:p-8 rounded-2xl border border-gray-100 shadow-sm space-y-5">
-        {/* COUNTRY */}
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white p-6 md:p-8 rounded-2xl border border-gray-100 shadow-sm space-y-5"
+      >
+        {/* QUỐC GIA */}
         <select
           name="country_id"
           value={form.country_id}
@@ -102,7 +103,7 @@ export default function LocationEdit() {
           className="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
           required
         >
-          <option value="">Select Country</option>
+          <option value="">Chọn Quốc gia</option>
           {countries.map((country) => (
             <option key={country.id} value={country.id}>
               {country.name}
@@ -114,16 +115,7 @@ export default function LocationEdit() {
           name="name"
           value={form.name}
           onChange={handleChange}
-          placeholder="Location Name"
-          className="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-          required
-        />
-
-        <input
-          name="type"
-          value={form.type}
-          onChange={handleChange}
-          placeholder="Type (beach, mountain, city...)"
+          placeholder="Tên địa điểm"
           className="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
           required
         />
@@ -132,7 +124,7 @@ export default function LocationEdit() {
           name="description"
           value={form.description}
           onChange={handleChange}
-          placeholder="Description"
+          placeholder="Mô tả"
           className="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
         />
 
@@ -140,7 +132,7 @@ export default function LocationEdit() {
           name="content"
           value={form.content}
           onChange={handleChange}
-          placeholder="Content"
+          placeholder="Nội dung chi tiết"
           className="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
         />
 
@@ -148,7 +140,7 @@ export default function LocationEdit() {
           name="address"
           value={form.address}
           onChange={handleChange}
-          placeholder="Address"
+          placeholder="Địa chỉ"
           className="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
         />
 
@@ -156,7 +148,7 @@ export default function LocationEdit() {
           name="province"
           value={form.province}
           onChange={handleChange}
-          placeholder="Province"
+          placeholder="Tỉnh/Thành phố"
           className="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
         />
 
@@ -164,7 +156,7 @@ export default function LocationEdit() {
           name="lat"
           value={form.lat}
           onChange={handleChange}
-          placeholder="Latitude"
+          placeholder="Vĩ độ (Latitude)"
           className="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
         />
 
@@ -172,7 +164,7 @@ export default function LocationEdit() {
           name="lng"
           value={form.lng}
           onChange={handleChange}
-          placeholder="Longitude"
+          placeholder="Kinh độ (Longitude)"
           className="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
         />
 
@@ -180,7 +172,7 @@ export default function LocationEdit() {
           name="image_url"
           value={form.image_url}
           onChange={handleChange}
-          placeholder="Image URL"
+          placeholder="Đường dẫn ảnh (URL)"
           className="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
         />
 
@@ -189,7 +181,7 @@ export default function LocationEdit() {
             type="submit"
             className="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-medium hover:bg-blue-700 transition-colors shadow-sm shadow-blue-600/20"
           >
-            Update
+            Cập nhật
           </button>
 
           <button
@@ -197,7 +189,7 @@ export default function LocationEdit() {
             onClick={() => navigate("/admin/locations")}
             className="bg-gray-100 text-gray-600 px-5 py-2.5 rounded-xl font-medium hover:bg-gray-200 transition-colors"
           >
-            Cancel
+            Hủy
           </button>
         </div>
       </form>

@@ -85,6 +85,16 @@ body[data-theme="mid_autumn"] {
     radial-gradient(circle at 10% 90%, rgba(220,38,38,0.03) 0%, transparent 50%);
 }
 
+/* Leaflet tiles break if Tailwind img max-width overrides them */
+.leaflet-container img,
+.leaflet-container svg {
+  max-width: none !important;
+}
+
+.leaflet-container {
+  background: #e5e7eb;
+}
+
 /* ========================================
    THEME BANNER DECORATION
    ======================================== */

@@ -4,100 +4,88 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
-use App\Models\Payment;
-use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class ReportController extends Controller
 {
     public function stats(Request $request)
     {
-        $from = $request->input('from', now()->startOfMonth()->toDateString());
-        $to = $request->input('to', now()->toDateString());
+        $from = $request->query('from', now()->startOfMonth()->toDateString());
+        $to   = $request->query('to',   now()->toDateString());
 
-        $bookings = Booking::whereBetween('created_at', [$from, "$to 23:59:59"]);
+        $base = Booking::whereBetween(DB::raw('DATE(created_at)'), [$from, $to]);
 
-        $totalBookings = (clone $bookings)->count();
-        $totalRevenue = (clone $bookings)->where('status', '!=', 'cancelled')->sum('total_amount');
-        $paidRevenue = Payment::where('status', 'completed')
-            ->whereBetween('created_at', [$from, "$to 23:59:59"])
-            ->sum('amount');
+        $totalBookings = (clone $base)->count();
+        $totalRevenue  = (clone $base)->sum('total_amount');
+        $paidRevenue   = (clone $base)->where('status', 'paid')->sum('total_amount');
 
-        $byType = (clone $bookings)->select('booking_type', DB::raw('COUNT(*) as count'), DB::raw('SUM(total_amount) as revenue'))
-            ->where('status', '!=', 'cancelled')
+        $byType = (clone $base)
+            ->select('booking_type', DB::raw('COUNT(*) as count'), DB::raw('SUM(total_amount) as revenue'))
             ->groupBy('booking_type')
             ->get();
 
-        $byStatus = (clone $bookings)->select('status', DB::raw('COUNT(*) as count'))
+        $byStatus = (clone $base)
+            ->select('status', DB::raw('COUNT(*) as count'))
             ->groupBy('status')
             ->get();
 
-        $byPaymentMethod = Payment::whereBetween('created_at', [$from, "$to 23:59:59"])
-            ->where('status', 'completed')
-            ->select('method', DB::raw('COUNT(*) as count'), DB::raw('SUM(amount) as total'))
-            ->groupBy('method')
+        $byPaymentMethod = (clone $base)
+            ->select('payment_type as method', DB::raw('COUNT(*) as count'), DB::raw('SUM(total_amount) as total'))
+            ->where('status', 'paid')
+            ->groupBy('payment_type')
             ->get();
 
-        $dailyRevenue = (clone $bookings)->where('status', '!=', 'cancelled')
-            ->select(DB::raw('DATE(created_at) as date'), DB::raw('SUM(total_amount) as revenue'), DB::raw('COUNT(*) as count'))
+        $dailyRevenue = (clone $base)
+            ->select(
+                DB::raw('DATE(created_at) as date'),
+                DB::raw('SUM(total_amount) as revenue'),
+                DB::raw('COUNT(*) as count')
+            )
             ->groupBy(DB::raw('DATE(created_at)'))
-            ->orderBy('date')
+            ->orderBy(DB::raw('DATE(created_at)'))
             ->get();
 
         return response()->json([
-            'from' => $from,
-            'to' => $to,
-            'total_bookings' => $totalBookings,
-            'total_revenue' => $totalRevenue,
-            'paid_revenue' => $paidRevenue,
-            'by_type' => $byType,
-            'by_status' => $byStatus,
-            'by_payment_method' => $byPaymentMethod,
-            'daily_revenue' => $dailyRevenue,
+            'from'               => $from,
+            'to'                 => $to,
+            'total_bookings'     => $totalBookings,
+            'total_revenue'      => (float) $totalRevenue,
+            'paid_revenue'       => (float) $paidRevenue,
+            'by_type'            => $byType,
+            'by_status'          => $byStatus,
+            'by_payment_method'  => $byPaymentMethod,
+            'daily_revenue'      => $dailyRevenue,
         ]);
     }
 
     public function exportPdf(Request $request)
     {
-        $from = $request->input('from', now()->startOfMonth()->toDateString());
-        $to = $request->input('to', now()->toDateString());
+        $from = $request->query('from', now()->startOfMonth()->toDateString());
+        $to   = $request->query('to',   now()->toDateString());
 
-        $bookings = Booking::whereBetween('created_at', [$from, "$to 23:59:59"]);
+        $base = Booking::whereBetween(DB::raw('DATE(created_at)'), [$from, $to]);
 
-        $totalBookings = (clone $bookings)->count();
-        $totalRevenue = (clone $bookings)->where('status', '!=', 'cancelled')->sum('total_amount');
-        $paidRevenue = Payment::where('status', 'completed')
-            ->whereBetween('created_at', [$from, "$to 23:59:59"])
-            ->sum('amount');
+        $data = [
+            'from'           => $from,
+            'to'             => $to,
+            'total_bookings' => (clone $base)->count(),
+            'total_revenue'  => (float) (clone $base)->sum('total_amount'),
+            'paid_revenue'   => (float) (clone $base)->where('status', 'paid')->sum('total_amount'),
+            'by_type'        => (clone $base)
+                ->select('booking_type', DB::raw('COUNT(*) as count'), DB::raw('SUM(total_amount) as revenue'))
+                ->groupBy('booking_type')->get(),
+            'by_status'      => (clone $base)
+                ->select('status', DB::raw('COUNT(*) as count'))
+                ->groupBy('status')->get(),
+            'daily_revenue'  => (clone $base)
+                ->select(DB::raw('DATE(created_at) as date'), DB::raw('SUM(total_amount) as revenue'), DB::raw('COUNT(*) as count'))
+                ->groupBy(DB::raw('DATE(created_at)'))->orderBy(DB::raw('DATE(created_at)'))->get(),
+        ];
 
-        $byType = (clone $bookings)->select('booking_type', DB::raw('COUNT(*) as count'), DB::raw('SUM(total_amount) as revenue'))
-            ->where('status', '!=', 'cancelled')
-            ->groupBy('booking_type')
-            ->get();
-
-        $byStatus = (clone $bookings)->select('status', DB::raw('COUNT(*) as count'))
-            ->groupBy('status')
-            ->get();
-
-        $byPaymentMethod = Payment::whereBetween('created_at', [$from, "$to 23:59:59"])
-            ->where('status', 'completed')
-            ->select('method', DB::raw('COUNT(*) as count'), DB::raw('SUM(amount) as total'))
-            ->groupBy('method')
-            ->get();
-
-        $topBookings = Booking::whereBetween('created_at', [$from, "$to 23:59:59"])
-            ->where('status', '!=', 'cancelled')
-            ->with('user')
-            ->orderByDesc('total_amount')
-            ->limit(10)
-            ->get();
-
-        $data = compact('from', 'to', 'totalBookings', 'totalRevenue', 'paidRevenue', 'byType', 'byStatus', 'byPaymentMethod', 'topBookings');
-
-        $pdf = Pdf::loadView('reports.revenue', $data)
-            ->setPaper('a4', 'portrait');
-
-        return $pdf->download("bao-cao-doanh-thu-{$from}-{$to}.pdf");
+        $pdf = Pdf::loadView('reports.report', $data)->setPaper('a4', 'portrait');
+        return $pdf->download("BaoCao_{$from}_{$to}.pdf");
     }
 }
+

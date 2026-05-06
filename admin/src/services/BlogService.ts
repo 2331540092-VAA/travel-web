@@ -1,4 +1,4 @@
-const API_URL = "http://127.0.0.1:8000/api/admin/blogs";
+﻿const API_URL = `${import.meta.env.VITE_API_BASE}/api/admin/blogs`;
 
 export interface Blog {
   id?: number;
@@ -86,3 +86,6 @@ class BlogService {
 }
 
 export default new BlogService();
+
+
+

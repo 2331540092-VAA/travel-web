@@ -67,7 +67,7 @@ export default function BlogDetail() {
       <h1 className="text-3xl font-bold mb-4">{blog.title}</h1>
 
       <p className="text-gray-500 text-sm mb-6">
-        {new Date(blog.created_at).toLocaleDateString()}
+        {new Date(blog.created_at).toLocaleString('vi-VN')}
       </p>
 
       {blog.cover_url && (

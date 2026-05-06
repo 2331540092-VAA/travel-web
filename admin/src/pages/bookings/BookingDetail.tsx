@@ -7,7 +7,14 @@ import {
 } from "../../services/BookingService";
 import { ArrowLeft, ClipboardList, Save } from "lucide-react";
 
-const statusOptions = ["pending", "confirmed", "cancelled", "completed", "paid"];
+// Việt hóa các tùy chọn trạng thái
+const statusOptions = [
+  { value: "pending", label: "Đang chờ" },
+  { value: "confirmed", label: "Đã xác nhận" },
+  { value: "cancelled", label: "Đã hủy" },
+  { value: "completed", label: "Hoàn thành" },
+  { value: "paid", label: "Đã thanh toán" },
+];
 
 const statusStyle: Record<string, string> = {
   pending: "bg-amber-100 text-amber-700",
@@ -40,52 +47,105 @@ const BookingDetail: React.FC = () => {
   const handleStatusChange = async () => {
     if (!booking) return;
     setUpdating(true);
-    await updateBookingStatus(booking.id, status);
-    setBooking({ ...booking, status });
-    setUpdating(false);
-    alert("Cập nhật trạng thái thành công!");
+    try {
+      await updateBookingStatus(booking.id, status);
+      setBooking({ ...booking, status });
+      alert("Cập nhật trạng thái thành công!");
+    } catch (error) {
+      alert("Cập nhật thất bại, vui lòng thử lại!");
+    } finally {
+      setUpdating(false);
+    }
   };
 
   if (loading)
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="flex items-center justify-center py-20 text-gray-400">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-3"></div>
+        Đang tải thông tin...
       </div>
     );
 
   if (!booking)
     return (
       <div className="text-center py-20 text-gray-400">
-        Không tìm thấy booking
+        Không tìm thấy thông tin đơn đặt chỗ này.
       </div>
     );
 
   const bookingTypeLabel: Record<string, string> = {
     hotel: "Khách sạn",
-    tour: "Tour",
+    tour: "Tour du lịch",
     restaurant: "Nhà hàng",
   };
 
+  const serviceName =
+    booking.booking_type === "tour"
+      ? (booking.tour?.name || `Tour #${booking.target_id}`)
+      : booking.booking_type === "hotel"
+        ? [booking.hotel?.name, booking.hotel_room?.name].filter(Boolean).join(" — ") || `Khách sạn #${booking.target_id}`
+        : booking.booking_type === "restaurant"
+          ? [booking.restaurant?.name, booking.restaurant_table?.name].filter(Boolean).join(" — ") || `Nhà hàng #${booking.target_id}`
+          : `Dịch vụ #${booking.target_id}`;
+
   const infoRows = [
-    { label: "Khách hàng", value: booking.user?.name || `User #${booking.user_id}` },
-    { label: "Email", value: booking.user?.email || "—" },
-    { label: "Loại đặt", value: (
-      <span className="text-xs px-2.5 py-1 rounded-full font-bold uppercase bg-purple-100 text-purple-600">
-        {bookingTypeLabel[booking.booking_type] || booking.booking_type}
-      </span>
-    )},
-    { label: "Mã đối tượng", value: `#${booking.target_id}` },
-    { label: "Check In", value: booking.check_in ? new Date(booking.check_in).toLocaleDateString("vi-VN") : "—" },
-    { label: "Check Out", value: booking.check_out ? new Date(booking.check_out).toLocaleDateString("vi-VN") : "—" },
-    { label: "Ngày đặt", value: booking.booking_date ? new Date(booking.booking_date).toLocaleDateString("vi-VN") : "—" },
-    { label: "Số lượng", value: booking.quantity },
-    { label: "Tổng tiền", value: (
-      <span className="text-lg font-bold text-emerald-600">
-        {Number(booking.total_amount || 0).toLocaleString("vi-VN")} VNĐ
-      </span>
-    )},
-    { label: "Thanh toán", value: booking.payment_type || "—" },
-    { label: "Ghi chú", value: booking.note || "—" },
+    {
+      label: "Khách hàng",
+      value: booking.user?.name || `Người dùng #${booking.user_id}`,
+    },
+    { label: "Email liên hệ", value: booking.user?.email || "—" },
+    {
+      label: "Loại dịch vụ",
+      value: (
+        <span className="text-xs px-2.5 py-1 rounded-full font-bold uppercase bg-purple-100 text-purple-600">
+          {bookingTypeLabel[booking.booking_type] || booking.booking_type}
+        </span>
+      ),
+    },
+    { label: "Tên dịch vụ", value: serviceName },
+    { label: "Mã dịch vụ (ID)", value: `#${booking.target_id}` },
+    {
+      label: booking.booking_type === "hotel" ? "Nhận phòng (Check In)"
+           : booking.booking_type === "tour"  ? "Ngày khởi hành"
+           : "Ngày đặt",
+      value: booking.check_in
+        ? new Date(booking.check_in).toLocaleDateString("vi-VN")
+        : booking.booking_date
+          ? new Date(booking.booking_date).toLocaleDateString("vi-VN")
+          : "—",
+    },
+    ...(booking.booking_type === "hotel" || booking.booking_type === "tour"
+      ? [{
+          label: booking.booking_type === "hotel" ? "Trả phòng (Check Out)" : "Ngày kết thúc",
+          value: booking.check_out
+            ? new Date(booking.check_out).toLocaleDateString("vi-VN")
+            : "—",
+        }]
+      : []),
+    {
+      label: "Thời gian đặt thực tế",
+      value: booking.created_at
+        ? new Date(booking.created_at).toLocaleString("vi-VN", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+          })
+        : "—",
+    },
+    { label: "Số lượng đặt", value: `${booking.quantity} đơn vị` },
+    {
+      label: "Tổng tiền thanh toán",
+      value: (
+        <span className="text-lg font-bold text-emerald-600">
+          {Number(booking.total_amount || 0).toLocaleString("vi-VN")} VNĐ
+        </span>
+      ),
+    },
+    { label: "Hình thức thanh toán", value: booking.payment_type || "—" },
+    { label: "Ghi chú từ khách", value: booking.note || "Không có" },
   ];
 
   return (
@@ -98,14 +158,17 @@ const BookingDetail: React.FC = () => {
           </div>
           <div>
             <h1 className="text-xl font-bold text-gray-800">
-              Chi tiết Booking #{booking.id}
+              Chi tiết đơn đặt #{booking.id}
             </h1>
-            <p className="text-xs text-gray-400">
-              Trạng thái hiện tại:{" "}
-              <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold uppercase ${statusStyle[booking.status] || "bg-gray-100 text-gray-600"}`}>
-                {booking.status}
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className="text-xs text-gray-400">Trạng thái:</span>
+              <span
+                className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase ${statusStyle[booking.status] || "bg-gray-100 text-gray-600"}`}
+              >
+                {statusOptions.find((opt) => opt.value === booking.status)
+                  ?.label || booking.status}
               </span>
-            </p>
+            </div>
           </div>
         </div>
         <button
@@ -113,7 +176,7 @@ const BookingDetail: React.FC = () => {
           className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
         >
           <ArrowLeft size={16} />
-          Quay lại
+          Quay lại danh sách
         </button>
       </div>
 
@@ -121,13 +184,13 @@ const BookingDetail: React.FC = () => {
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="bg-gray-50/80 px-6 py-3 border-b border-gray-100">
           <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-            Thông tin đơn đặt
+            Thông tin chi tiết đơn hàng
           </h2>
         </div>
         <div className="divide-y divide-gray-50">
           {infoRows.map((row, i) => (
-            <div key={i} className="flex items-center px-6 py-3.5">
-              <span className="w-40 text-sm text-gray-400 font-medium shrink-0">
+            <div key={i} className="flex items-center px-6 py-4">
+              <span className="w-48 text-sm text-gray-400 font-medium shrink-0">
                 {row.label}
               </span>
               <span className="text-sm text-gray-800">{row.value}</span>
@@ -140,28 +203,28 @@ const BookingDetail: React.FC = () => {
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="bg-gray-50/80 px-6 py-3 border-b border-gray-100">
           <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-            Cập nhật trạng thái
+            Cập nhật trạng thái đơn hàng
           </h2>
         </div>
-        <div className="px-6 py-5 flex items-center gap-4">
+        <div className="px-6 py-6 flex flex-col sm:flex-row items-start sm:items-center gap-4">
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value)}
-            className="bg-gray-50/50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all min-w-[180px]"
+            className="w-full sm:w-52 bg-gray-50/50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
           >
             {statusOptions.map((opt) => (
-              <option key={opt} value={opt}>
-                {opt.charAt(0).toUpperCase() + opt.slice(1)}
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
               </option>
             ))}
           </select>
           <button
             onClick={handleStatusChange}
             disabled={updating || status === booking.status}
-            className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-xl font-medium hover:bg-blue-700 transition-colors shadow-sm shadow-blue-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-xl font-medium hover:bg-blue-700 transition-colors shadow-sm shadow-blue-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Save size={16} />
-            {updating ? "Đang lưu..." : "Cập nhật"}
+            {updating ? "Đang xử lý..." : "Lưu thay đổi"}
           </button>
         </div>
       </div>

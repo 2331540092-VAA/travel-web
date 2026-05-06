@@ -1,6 +1,13 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { apiPost } from "../../service/api";
+import {
+  ArrowLeft,
+  Calendar,
+  Info,
+  CreditCard,
+  ClipboardList,
+} from "lucide-react";
 
 export default function ServiceBooking() {
   const { id, type } = useParams();
@@ -13,7 +20,9 @@ export default function ServiceBooking() {
 
   // Lấy ngày hôm nay (yyyy-mm-dd)
   const today = new Date().toISOString().slice(0, 10);
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
   const [date, setDate] = useState(today);
+  const [checkOut, setCheckOut] = useState(tomorrow); // Chỉ dùng cho hotel
   const [note, setNote] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -22,11 +31,37 @@ export default function ServiceBooking() {
   const [people, setPeople] = useState(1); // Số người
   const [unitPrice, setUnitPrice] = useState(0); // Giá 1 phòng/bàn
   const [total, setTotal] = useState(0); // Tổng tiền
+  const [service, setService] = useState<Record<string, unknown>>({}); // Thông tin dịch vụ
+  const [maxPeople, setMaxPeople] = useState<number | null>(null); // Sức chứa tối đa (tính theo số phòng/bàn)
+  const [capacityPerItem, setCapacityPerItem] = useState<number | null>(null); // Sức chứa mỗi phòng/bàn
+  const [maxQuantity, setMaxQuantity] = useState<number | null>(null); // Số phòng/bàn còn lại
 
-  // Lấy giá dịch vụ từ API (nếu có item_id)
+  // Tính số đêm
+  const nights = type === "hotel"
+    ? Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(date).getTime()) / 86400000))
+    : 1;
+
+  // Lấy thông tin dịch vụ và giá dịch vụ từ API
   useEffect(() => {
-    async function fetchPrice() {
+    async function fetchServiceAndPrice() {
       if (!id || !type) return;
+      // Lấy thông tin dịch vụ (hotel hoặc restaurant)
+      let serviceUrl = "";
+      if (type === "hotel") {
+        serviceUrl = `http://127.0.0.1:8000/api/hotels/${id}`;
+      } else if (type === "restaurant") {
+        serviceUrl = `http://127.0.0.1:8000/api/restaurants/${id}`;
+      }
+      if (serviceUrl) {
+        try {
+          const res = await fetch(serviceUrl);
+          const data = await res.json();
+          setService(data.data ?? data);
+        } catch {
+          setService({});
+        }
+      }
+      // Lấy giá dịch vụ theo item_id
       let url = "";
       if (type === "hotel" && itemId) {
         url = `http://127.0.0.1:8000/api/hotels/${id}/rooms`;
@@ -39,21 +74,30 @@ export default function ServiceBooking() {
           const data = await res.json();
           const items = data.data ?? data;
           const found = items.find(
-            (it: any) => String(it.id) === String(itemId),
+            (it: Record<string, unknown>) => String(it.id) === String(itemId),
           );
           if (found) {
             setUnitPrice(Number(found.price_per_night || found.price || 0));
+            setCapacityPerItem(Number(found.capacity) || null);
+            setMaxPeople(Number(found.capacity) || null);
+            setMaxQuantity(Number(found.quantity) || null);
           }
-        } catch {}
+        } catch {
+          // ignore
+        }
       }
     }
-    fetchPrice();
+    fetchServiceAndPrice();
   }, [id, type, itemId]);
 
   // Tính tổng tiền
   useEffect(() => {
-    setTotal(unitPrice * quantity);
-  }, [unitPrice, quantity]);
+    if (type === "hotel") {
+      setTotal(unitPrice * quantity * nights);
+    } else {
+      setTotal(unitPrice * quantity);
+    }
+  }, [unitPrice, quantity, nights, type]);
 
   const submit = async () => {
     setError("");
@@ -83,6 +127,8 @@ export default function ServiceBooking() {
         booking_type: type, // hotel | restaurant
         target_id: id,
         booking_date: date,
+        check_in: date,
+        check_out: type === "hotel" ? checkOut : undefined,
         note,
         item_id: itemId,
         quantity,
@@ -90,112 +136,247 @@ export default function ServiceBooking() {
         total_amount: total,
         user_id: user.id,
       };
-      const data = await apiPost<any>("/bookings", body);
-      const booking = data.data || data.booking || data;
+      const data = await apiPost<Record<string, unknown>>("/bookings", body);
+      const booking = (data.data || data.booking || data) as Record<string, unknown>;
       navigate(
         `/payment?bookingId=${booking.id}` +
-          `&price=${booking.total_price || total}` +
+          `&price=${booking.total_amount || total}` +
           `&people=${people}` +
           `&date=${date}` +
           `&serviceType=${type}` +
           `&serviceId=${id}` +
           `&itemId=${itemId || ""}`,
       );
-    } catch (e: any) {
-      setError(e.message || "Có lỗi xảy ra. Vui lòng thử lại.");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Có lỗi xảy ra. Vui lòng thử lại.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-xl mx-auto py-20">
-      <h1 className="text-2xl font-bold mb-6">
-        Đặt{" "}
-        {type === "hotel"
-          ? "phòng khách sạn"
-          : type === "restaurant"
-            ? "bàn nhà hàng"
-            : "dịch vụ"}
-      </h1>
+    <div className="bg-gray-50 min-h-screen">
+      <div className="max-w-5xl mx-auto py-10 px-4">
+        {/* Nút quay lại */}
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-1 text-gray-500 hover:text-gray-800 text-sm mb-6 transition-colors font-medium"
+        >
+          <ArrowLeft size={16} /> Quay lại
+        </button>
 
-      {error && <div className="mb-4 text-red-600 font-semibold">{error}</div>}
-      {success && (
-        <div className="mb-4 text-green-600 font-semibold">{success}</div>
-      )}
+        <h1 className="text-2xl font-bold mb-8 text-gray-800">
+          Đặt{" "}
+          {type === "hotel"
+            ? "Phòng Khách Sạn"
+            : type === "restaurant"
+              ? "Bàn Nhà Hàng"
+              : "Dịch Vụ"}
+        </h1>
 
-      <label className="block mb-2 font-medium">
-        Chọn ngày đặt <span className="text-red-500">*</span>
-      </label>
-      <input
-        type="date"
-        className="border w-full p-3 rounded mb-4"
-        value={date}
-        min={today}
-        onChange={(e) => setDate(e.target.value)}
-        disabled={loading}
-      />
+        <div className="grid md:grid-cols-2 gap-8 items-start">
+          {/* ===== THÔNG TIN DỊCH VỤ (BÊN TRÁI) ===== */}
+          <div className="border border-gray-200 rounded-2xl overflow-hidden bg-white shadow-sm">
+            {/* Ảnh Service (Nếu có data service truyền vào) */}
+            <img
+              src={(service?.image_url as string) || "https://via.placeholder.com/800x400"}
+              className="w-full h-[250px] object-cover"
+              alt={(service?.name as string) || "Thông tin dịch vụ"}
+            />
+            <div className="p-6">
+              <h2 className="text-xl font-bold text-gray-800 mb-4">
+                {(service?.name as string) || "Thông tin dịch vụ"}
+              </h2>
 
-      <div className="flex gap-4 mb-4">
-        <div className="flex-1">
-          <label className="block mb-2 font-medium">
-            Số lượng{" "}
-            {type === "hotel"
-              ? "phòng"
-              : type === "restaurant"
-                ? "bàn"
-                : "dịch vụ"}{" "}
-            <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="number"
-            min={1}
-            value={quantity}
-            onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
-            className="border w-full p-3 rounded"
-            disabled={loading}
-          />
-        </div>
-        <div className="flex-1">
-          <label className="block mb-2 font-medium">
-            Số người <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="number"
-            min={1}
-            value={people}
-            onChange={(e) => setPeople(Math.max(1, Number(e.target.value)))}
-            className="border w-full p-3 rounded"
-            disabled={loading}
-          />
+              <div className="space-y-4">
+                {/* Ngày đặt */}
+                <div className="bg-gray-50 p-4 rounded-xl">
+                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 flex items-center gap-2">
+                    <Calendar size={14} /> {type === "hotel" ? "Ngày nhận phòng" : "Chọn ngày đặt"}{" "}
+                    <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    className="w-full bg-transparent border-b border-gray-300 focus:border-blue-500 outline-none py-1 text-gray-800 font-medium"
+                    value={date}
+                    min={today}
+                    onChange={(e) => {
+                      setDate(e.target.value);
+                      // Ensure check-out is always after check-in
+                      if (type === "hotel" && checkOut <= e.target.value) {
+                        const next = new Date(e.target.value);
+                        next.setDate(next.getDate() + 1);
+                        setCheckOut(next.toISOString().slice(0, 10));
+                      }
+                    }}
+                    disabled={loading}
+                  />
+                </div>
+
+                {type === "hotel" && (
+                  <div className="bg-gray-50 p-4 rounded-xl">
+                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 flex items-center gap-2">
+                      <Calendar size={14} /> Ngày trả phòng <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      className="w-full bg-transparent border-b border-gray-300 focus:border-blue-500 outline-none py-1 text-gray-800 font-medium"
+                      value={checkOut}
+                      min={new Date(new Date(date).getTime() + 86400000).toISOString().slice(0, 10)}
+                      onChange={(e) => setCheckOut(e.target.value)}
+                      disabled={loading}
+                    />
+                    <p className="text-xs text-blue-600 mt-1 font-medium">{nights} đêm × {unitPrice.toLocaleString()} VND = {(unitPrice * nights * quantity).toLocaleString()} VND</p>
+                  </div>
+                )}
+
+                {/* Ghi chú */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                    <ClipboardList size={16} /> Ghi chú (tùy chọn)
+                  </label>
+                  <textarea
+                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none min-h-[100px]"
+                    placeholder="Yêu cầu đặc biệt, ví dụ: tầng cao, ít cay, vị trí cửa sổ..."
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ===== CHI TIẾT THANH TOÁN (BÊN PHẢI) ===== */}
+          <div className="border border-gray-200 rounded-2xl p-6 bg-white shadow-sm sticky top-6">
+            <h2 className="text-lg font-bold text-gray-800 mb-6 border-b pb-3 flex items-center gap-2">
+              <CreditCard size={20} className="text-blue-600" /> Chi tiết thanh
+              toán
+            </h2>
+
+            {/* Hiển thị lỗi/thành công */}
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg font-medium">
+                {error}
+              </div>
+            )}
+            {success && (
+              <div className="mb-4 p-3 bg-green-50 text-green-600 text-sm rounded-lg font-medium">
+                {success}
+              </div>
+            )}
+
+            {/* Đơn giá */}
+            <div className="mb-6">
+              <p className="text-xs text-gray-500 uppercase font-semibold mb-1">
+                Đơn giá cơ bản
+              </p>
+              <span className="text-2xl font-bold text-gray-800">
+                {unitPrice.toLocaleString()}{" "}
+                <small className="text-sm font-normal">VND</small>
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              {/* Số lượng */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">
+                  Số {type === "hotel" ? "phòng" : "bàn"}
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min={1}
+                    max={maxQuantity ?? undefined}
+                    value={quantity}
+                    onChange={(e) => {
+                      const newQty = Math.min(
+                        Math.max(1, Number(e.target.value)),
+                        maxQuantity ?? Infinity
+                      );
+                      setQuantity(newQty);
+                      // Cập nhật sức chứa tối đa người theo số phòng/bàn
+                      if (capacityPerItem !== null) {
+                        const newMax = capacityPerItem * newQty;
+                        setMaxPeople(newMax);
+                        setPeople((prev) => Math.min(prev, newMax));
+                      }
+                    }}
+                    className="w-full border border-gray-200 rounded-lg pl-3 pr-2 py-2 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none"
+                    disabled={loading}
+                  />
+                </div>
+                {maxQuantity !== null && (
+                  <p className="text-xs text-gray-400 mt-1">Còn lại: {maxQuantity} | Sức chứa: {capacityPerItem ?? "?"} người/đơn vị</p>
+                )}
+              </div>
+              {/* Số người */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">
+                  Số người
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min={1}
+                    max={maxPeople ?? undefined}
+                    value={people}
+                    onChange={(e) =>
+                      setPeople(Math.min(
+                        Math.max(1, Number(e.target.value)),
+                        maxPeople ?? Infinity
+                      ))
+                    }
+                    className="w-full border border-gray-200 rounded-lg pl-3 pr-2 py-2 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none"
+                    disabled={loading}
+                  />
+                </div>
+                {maxPeople !== null && (
+                  <p className="text-xs text-gray-400 mt-1">Tối đa: {maxPeople} người ({quantity} × {capacityPerItem})</p>
+                )}
+              </div>
+            </div>
+
+            {/* TỔNG TIỀN */}
+            <div className="mb-8 p-5 bg-blue-50 rounded-2xl flex justify-between items-center border border-blue-100">
+              <div className="flex flex-col">
+                <span className="text-xs font-bold text-blue-600 uppercase">
+                  Tổng thanh toán
+                </span>
+                <span className="text-2xl font-black text-blue-700">
+                  {total.toLocaleString()}{" "}
+                  <small className="text-sm font-bold">VND</small>
+                </span>
+              </div>
+              <Info size={20} className="text-blue-300" />
+            </div>
+
+            {/* NÚT XÁC NHẬN */}
+            <button
+              onClick={submit}
+              disabled={loading}
+              className={`w-full py-4 rounded-xl font-bold text-base transition-all shadow-lg ${
+                loading
+                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  : "bg-blue-600 text-white hover:bg-blue-700 active:scale-[0.98] shadow-blue-100"
+              }`}
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  ĐANG XỬ LÝ...
+                </span>
+              ) : (
+                "XÁC NHẬN ĐẶT NGAY"
+              )}
+            </button>
+
+            <p className="text-[11px] text-gray-400 text-center mt-6 uppercase tracking-widest font-medium">
+              Hỗ trợ 24/7 • Quy trình nhanh chóng
+            </p>
+          </div>
         </div>
       </div>
-
-      {unitPrice > 0 && (
-        <div className="mb-4 text-lg font-semibold">
-          Đơn giá: {unitPrice.toLocaleString()} VND
-          <br />
-          Tổng tiền:{" "}
-          <span className="text-blue-600">{total.toLocaleString()} VND</span>
-        </div>
-      )}
-
-      <label className="block mb-2 font-medium">Ghi chú (tuỳ chọn)</label>
-      <textarea
-        className="border w-full p-3 rounded mb-4"
-        placeholder="Ghi chú cho dịch vụ, ví dụ: yêu cầu đặc biệt, số người..."
-        value={note}
-        onChange={(e) => setNote(e.target.value)}
-        disabled={loading}
-      />
-
-      <button
-        onClick={submit}
-        className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold disabled:opacity-60"
-        disabled={loading}
-      >
-        {loading ? "Đang gửi..." : "Xác nhận đặt"}
-      </button>
     </div>
   );
 }

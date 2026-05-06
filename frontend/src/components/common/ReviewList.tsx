@@ -1,4 +1,5 @@
 import { Star } from "lucide-react";
+import { useState } from "react";
 
 interface ReviewItem {
   id: number;
@@ -13,6 +14,18 @@ interface ReviewListProps {
 }
 
 export default function ReviewList({ reviews }: ReviewListProps) {
+  const [avatarErrorMap, setAvatarErrorMap] = useState<Record<number, boolean>>(
+    {}
+  );
+
+  const normalizeAvatarUrl = (url?: string | null) => {
+    if (!url) return "";
+    const cleaned = String(url).trim();
+    if (!cleaned || cleaned === "null" || cleaned === "undefined") return "";
+    if (/^https?:\/\//i.test(cleaned) || cleaned.startsWith("data:")) return cleaned;
+    return `http://127.0.0.1:8000${cleaned.startsWith("/") ? "" : "/"}${cleaned}`;
+  };
+
   if (reviews.length === 0) {
     return (
       <div className="text-center py-8 text-gray-400 text-sm">
@@ -28,13 +41,24 @@ export default function ReviewList({ reviews }: ReviewListProps) {
           key={r.id}
           className="bg-white rounded-xl border border-gray-100 p-4 hover:shadow-sm transition"
         >
+          {(() => {
+            const avatarUrl = normalizeAvatarUrl(r.user?.avatar_url);
+            const showAvatar = Boolean(avatarUrl) && !avatarErrorMap[r.id];
+
+            return (
           <div className="flex items-start gap-3">
             {/* Avatar */}
-            {r.user?.avatar_url ? (
+            {showAvatar ? (
               <img
-                src={r.user.avatar_url}
+                src={avatarUrl}
                 className="w-10 h-10 rounded-full object-cover flex-shrink-0"
-                alt=""
+                alt={r.user?.name || "avatar"}
+                onError={() =>
+                  setAvatarErrorMap((prev) => ({
+                    ...prev,
+                    [r.id]: true,
+                  }))
+                }
               />
             ) : (
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
@@ -76,6 +100,8 @@ export default function ReviewList({ reviews }: ReviewListProps) {
               )}
             </div>
           </div>
+            );
+          })()}
         </div>
       ))}
     </div>

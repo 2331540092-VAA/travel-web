@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class Notification extends Model
 {
@@ -19,40 +19,43 @@ class Notification extends Model
     ];
 
     protected $casts = [
-        'data'    => 'array',
+        'data' => 'array',
         'is_read' => 'boolean',
     ];
 
+    // Nếu có quan hệ user
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
     /**
-     * Tạo notification cho admin (user_id = null)
+     * Tạo notification cho user
      */
-    public static function notifyAdmin(string $type, string $title, string $message, array $data = [])
+    public static function createUserNotification($userId, $type, $title, $message, $data = null)
     {
         return self::create([
-            'user_id' => null,
-            'type'    => $type,
-            'title'   => $title,
+            'user_id' => $userId,
+            'type' => $type,
+            'title' => $title,
             'message' => $message,
-            'data'    => $data,
+            'data' => $data,
+            'is_read' => false,
         ]);
     }
 
     /**
-     * Tạo notification cho user
+     * Tạo notification cho admin
      */
-    public static function notifyUser(int $userId, string $type, string $title, string $message, array $data = [])
+    public static function createAdminNotification($type, $title, $message, $data = null)
     {
         return self::create([
-            'user_id' => $userId,
-            'type'    => $type,
-            'title'   => $title,
+            'user_id' => null,
+            'type' => $type,
+            'title' => $title,
             'message' => $message,
-            'data'    => $data,
+            'data' => $data,
+            'is_read' => false,
         ]);
     }
 }

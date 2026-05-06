@@ -46,6 +46,11 @@ import TourScheduleList from "../pages/tours/TourScheduleList";
 import TourScheduleCreate from "../pages/tours/TourScheduleCreate";
 import TourScheduleEdit from "../pages/tours/TourScheduleEdit";
 
+// TOUR DEPARTURES
+import TourDepartureList from "../pages/tours/TourDeparturesList";
+import TourDepartureCreate from "../pages/tours/TourDeparturesCreate";
+import TourDepartureEdit from "../pages/tours/TourDeparturesEdit";
+
 // BLOGS
 import BlogList from "../pages/blogs/BlogList";
 import BlogCreate from "../pages/blogs/BlogCreate";
@@ -60,11 +65,6 @@ import ReviewList from "../pages/reviews/ReviewList";
 
 // Reports
 import Reports from "../pages/reports/Reports";
-
-// Themes
-import ThemeList from "../pages/themes/ThemeList";
-import ThemeCreate from "../pages/themes/ThemeCreate";
-import ThemeEdit from "../pages/themes/ThemeEdit";
 
 const AdminRoutes = () => {
   return (
@@ -81,6 +81,9 @@ const AdminRoutes = () => {
         <Route path="users" element={<UserList />} />
         <Route path="users/create" element={<UserCreate />} />
         <Route path="users/edit/:id" element={<UserEdit />} />
+
+        {/* REVIEWS */}
+        <Route path="reviews" element={<ReviewList />} />
 
         {/* LOCATIONS */}
         <Route path="locations" element={<LocationsList />} />
@@ -126,6 +129,17 @@ const AdminRoutes = () => {
         <Route path="tours/create" element={<TourCreate />} />
         <Route path="tours/edit/:id" element={<TourEdit />} />
 
+        {/* TOUR DEPARTURES */}
+        <Route path="tours/:id/departures" element={<TourDepartureList />} />
+        <Route
+          path="tours/:id/departures/create"
+          element={<TourDepartureCreate />}
+        />
+        <Route
+          path="tours/:id/departures/edit/:departureId"
+          element={<TourDepartureEdit />}
+        />
+
         {/* TOUR SCHEDULES */}
         <Route path="tours/:id/schedules" element={<TourScheduleList />} />
 
@@ -146,14 +160,6 @@ const AdminRoutes = () => {
         {/* BOOKINGS */}
         <Route path="bookings" element={<BookingList />} />
         <Route path="bookings/:id" element={<BookingDetail />} />
-
-        {/* REVIEWS */}
-        <Route path="reviews" element={<ReviewList />} />
-
-        {/* THEMES */}
-        <Route path="themes" element={<ThemeList />} />
-        <Route path="themes/create" element={<ThemeCreate />} />
-        <Route path="themes/edit/:id" element={<ThemeEdit />} />
 
         {/* REPORTS */}
         <Route path="reports" element={<Reports />} />

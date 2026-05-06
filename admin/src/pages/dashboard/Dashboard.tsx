@@ -8,9 +8,11 @@ import {
   Loader2,
   BarChart3,
   Utensils,
+  TrendingUp,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import DashboardService from "../../services/DashboardService";
+import ReportService from "../../services/ReportService";
 
 interface StatItem {
   label: string;
@@ -19,11 +21,19 @@ interface StatItem {
   trend: string;
 }
 
+interface DailyRevenue {
+  date: string;
+  revenue: number;
+  count: number;
+}
+
 const Dashboard = () => {
   const [stats, setStats] = useState<StatItem[]>([]);
   const [recentBookings, setRecentBookings] = useState<any[]>([]);
   const [revenue, setRevenue] = useState("0 VNĐ");
   const [loading, setLoading] = useState(true);
+  const [dailyRevenue, setDailyRevenue] = useState<DailyRevenue[]>([]);
+  const [dateRange, setDateRange] = useState<{ from: string; to: string }>({ from: "", to: "" });
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -32,6 +42,13 @@ const Dashboard = () => {
         setStats(data.stats || []);
         setRevenue(data.revenue || "0 VNĐ");
         setRecentBookings(data.recent_bookings || []);
+
+        // Lấy doanh thu 30 ngày gần nhất
+        const to = new Date().toISOString().split("T")[0];
+        const from = new Date(Date.now() - 29 * 86400000).toISOString().split("T")[0];
+        setDateRange({ from, to });
+        const report = await ReportService.getStats(from, to);
+        setDailyRevenue(report.daily_revenue || []);
       } catch (err) {
         console.error("Failed to fetch stats", err);
       } finally {
@@ -99,9 +116,7 @@ const Dashboard = () => {
               className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow"
             >
               <div className="flex justify-between items-start mb-4">
-                <div
-                  className={`${color} p-3 rounded-xl text-white shadow-md`}
-                >
+                <div className={`${color} p-3 rounded-xl text-white shadow-md`}>
                   <Icon size={24} />
                 </div>
                 <span className="flex items-center gap-1 text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
@@ -165,7 +180,7 @@ const Dashboard = () => {
                       </td>
                       <td className="px-6 py-4 text-xs text-gray-500">
                         {new Date(booking.created_at).toLocaleDateString(
-                          "vi-VN"
+                          "vi-VN",
                         )}
                       </td>
                       <td className="px-6 py-4">
@@ -202,22 +217,89 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Quick Actions */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
-          <h2 className="font-bold text-gray-800">Thống kê nhanh</h2>
-          <div className="aspect-square w-full rounded-2xl bg-gray-50 flex items-center justify-center border-2 border-dashed border-gray-200">
-            <div className="text-center p-6">
-              <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3">
-                <BarChart3 size={24} />
-              </div>
-              <p className="text-sm font-bold text-gray-700">
-                Biểu đồ tăng trưởng
-              </p>
-              <p className="text-xs text-gray-400 mt-1">
-                Dữ liệu đang được tổng hợp cho tháng này.
-              </p>
-            </div>
+        {/* Quick Stats / Growth Chart */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-bold text-gray-800">Thống kê nhanh</h2>
+            <Link to="/admin/reports" className="text-xs font-bold text-blue-600 hover:underline">Xem báo cáo</Link>
           </div>
+
+          {dailyRevenue.length > 0 ? (
+            <>
+              {/* Chart */}
+              {(() => {
+                const maxRev = Math.max(...dailyRevenue.map((d) => d.revenue), 1);
+                const totalRev = dailyRevenue.reduce((s, d) => s + d.revenue, 0);
+                const totalOrders = dailyRevenue.reduce((s, d) => s + d.count, 0);
+                return (
+                  <>
+                    {/* Summary */}
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      <div className="bg-blue-50 rounded-xl p-3">
+                        <p className="text-[10px] text-blue-500 font-semibold uppercase">Doanh thu</p>
+                        <p className="text-sm font-bold text-blue-700 mt-0.5">
+                          {totalRev.toLocaleString("vi-VN")}đ
+                        </p>
+                      </div>
+                      <div className="bg-emerald-50 rounded-xl p-3">
+                        <p className="text-[10px] text-emerald-500 font-semibold uppercase">Đơn đặt</p>
+                        <p className="text-sm font-bold text-emerald-700 mt-0.5">{totalOrders} đơn</p>
+                      </div>
+                    </div>
+
+                    {/* Bar chart */}
+                    <div className="flex-1">
+                      <p className="text-[10px] text-gray-400 font-semibold uppercase mb-2 flex items-center gap-1">
+                        <TrendingUp size={12} /> Doanh thu 30 ngày
+                      </p>
+                      <div className="flex items-end gap-[3px] h-28">
+                        {dailyRevenue.map((d) => {
+                          const pct = (d.revenue / maxRev) * 100;
+                          const dateStr = new Date(d.date).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" });
+                          return (
+                            <div
+                              key={d.date}
+                              className="flex-1 flex flex-col items-center group relative"
+                            >
+                              {/* Tooltip */}
+                              <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 hidden group-hover:block z-20 bg-gray-800 text-white text-[9px] px-2 py-1 rounded whitespace-nowrap shadow-lg">
+                                {dateStr}<br />
+                                {d.revenue.toLocaleString("vi-VN")}đ<br />
+                                {d.count} đơn
+                              </div>
+                              <div
+                                className="w-full rounded-t bg-gradient-to-t from-blue-600 to-blue-400 hover:from-blue-700 hover:to-blue-500 transition-colors min-h-[2px] cursor-pointer"
+                                style={{ height: `${Math.max(pct, 3)}%` }}
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {/* X-axis labels */}
+                      <div className="flex justify-between mt-1 text-[9px] text-gray-400">
+                        <span>
+                          {new Date(dateRange.from).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" })}
+                        </span>
+                        <span>
+                          {new Date(dateRange.to).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" })}
+                        </span>
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
+            </>
+          ) : (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center p-6">
+                <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <BarChart3 size={24} />
+                </div>
+                <p className="text-sm font-bold text-gray-700">Biểu đồ tăng trưởng</p>
+                <p className="text-xs text-gray-400 mt-1">Chưa có dữ liệu trong 30 ngày qua.</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

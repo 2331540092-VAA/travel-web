@@ -15,11 +15,6 @@ return new class extends Migration
                 ->constrained()
                 ->cascadeOnDelete();
 
-            $table->foreignId('category_id')
-                ->nullable()
-                ->constrained('categories')
-                ->nullOnDelete();
-
             $table->string('name');
             $table->text('description')->nullable();
             $table->longText('content')->nullable();

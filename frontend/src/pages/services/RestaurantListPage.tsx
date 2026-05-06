@@ -10,6 +10,11 @@ interface Service {
   avg_price?: number;
 }
 
+interface RawService extends Service {
+  image?: string;
+  min_price?: number;
+}
+
 export default function RestaurantListPage() {
   const navigate = useNavigate();
   const [restaurants, setRestaurants] = useState<Service[]>([]);
@@ -22,7 +27,7 @@ export default function RestaurantListPage() {
       try {
         const res = await fetch("http://127.0.0.1:8000/api/restaurants");
         const json = await res.json();
-        const restaurantData = (json.data ?? json).map((item: any) => ({
+        const restaurantData = (json.data ?? json).map((item: RawService) => ({
           ...item,
           image_url: item.image_url || item.image || "",
           avg_price: item.avg_price || item.min_price || 0,

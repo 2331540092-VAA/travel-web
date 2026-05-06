@@ -55,7 +55,10 @@ export default function RoomCreate() {
     <div className="p-6 max-w-xl mx-auto space-y-6">
       <h1 className="text-2xl font-bold text-gray-800">Create Room</h1>
 
-      <form onSubmit={handleSubmit} className="bg-white p-6 md:p-8 rounded-2xl border border-gray-100 shadow-sm space-y-5">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white p-6 md:p-8 rounded-2xl border border-gray-100 shadow-sm space-y-5"
+      >
         {/* ROOM NAME */}
         <input
           name="name"

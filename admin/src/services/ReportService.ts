@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:8000/api/admin/reports";
+﻿const API_URL = `${import.meta.env.VITE_API_BASE}/api/admin/reports`;
 
 const ReportService = {
   async getStats(from: string, to: string) {
@@ -13,3 +13,6 @@ const ReportService = {
 };
 
 export default ReportService;
+
+
+

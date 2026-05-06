@@ -109,9 +109,9 @@ export default function Payment() {
         toast.error("Lỗi: Tạo link thanh toán thất bại", { id: "payment" });
         setIsProcessing(false);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Lỗi thanh toán VNPay:", error);
-      toast.error("Có lỗi xảy ra: " + (error.message || "Vui lòng thử lại!"), {
+      toast.error("Có lỗi xảy ra: " + (error instanceof Error ? error.message : "Vui lòng thử lại!"), {
         id: "payment",
       });
       setIsProcessing(false);
@@ -141,9 +141,9 @@ export default function Payment() {
         toast.error("Lỗi: Tạo link thanh toán MoMo thất bại", { id: "payment" });
         setIsProcessing(false);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Lỗi thanh toán MoMo:", error);
-      toast.error("Có lỗi xảy ra: " + (error.message || "Vui lòng thử lại!"), {
+      toast.error("Có lỗi xảy ra: " + (error instanceof Error ? error.message : "Vui lòng thử lại!"), {
         id: "payment",
       });
       setIsProcessing(false);

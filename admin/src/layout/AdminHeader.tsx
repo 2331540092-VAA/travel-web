@@ -65,19 +65,8 @@ const AdminHeader = () => {
   };
 
   return (
-    <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-8 flex-shrink-0">
-      {/* Search */}
-      <div className="relative w-96">
-        <Search
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-          size={18}
-        />
-        <input
-          type="text"
-          placeholder="Tìm kiếm nội dung..."
-          className="w-full pl-10 pr-4 py-2 bg-gray-50 border-none rounded-lg focus:ring-2 focus:ring-blue-600/20 text-sm outline-none transition-all"
-        />
-      </div>
+    <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-8 shrink-0">
+      <div className="relative w-96"></div>
 
       {/* Right side */}
       <div className="flex items-center gap-4">
@@ -89,7 +78,7 @@ const AdminHeader = () => {
           >
             <Bell size={20} />
             {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 rounded-full border-2 border-white text-[10px] font-bold text-white flex items-center justify-center px-1">
+              <span className="absolute -top-0.5 -right-0.5 min-w-4.5 h-4.5 bg-red-500 rounded-full border-2 border-white text-[10px] font-bold text-white flex items-center justify-center px-1">
                 {unreadCount > 99 ? "99+" : unreadCount}
               </span>
             )}
@@ -99,9 +88,7 @@ const AdminHeader = () => {
           {showNotifications && (
             <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50">
               <div className="px-4 py-3 border-b border-gray-50 bg-gray-50/50 flex items-center justify-between">
-                <h3 className="font-bold text-gray-800 text-sm">
-                  Thông báo
-                </h3>
+                <h3 className="font-bold text-gray-800 text-sm">Thông báo</h3>
                 <div className="flex items-center gap-2">
                   {unreadCount > 0 && (
                     <button
@@ -117,7 +104,7 @@ const AdminHeader = () => {
                 </div>
               </div>
 
-              <div className="max-h-[360px] overflow-y-auto">
+              <div className="max-h-90 overflow-y-auto">
                 {notifications.length > 0 ? (
                   <div className="divide-y divide-gray-50">
                     {notifications.map((notif: any) => (
@@ -128,7 +115,7 @@ const AdminHeader = () => {
                         }`}
                       >
                         <div
-                          className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                          className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
                             !notif.is_read
                               ? "bg-blue-100 text-blue-600"
                               : "bg-gray-100 text-gray-500"
@@ -149,7 +136,7 @@ const AdminHeader = () => {
                           </p>
                         </div>
                         {!notif.is_read && (
-                          <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                          <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 shrink-0"></div>
                         )}
                       </div>
                     ))}
@@ -166,7 +153,7 @@ const AdminHeader = () => {
         </div>
 
         {/* Divider */}
-        <div className="h-8 w-[1px] bg-gray-100 mx-2"></div>
+        <div className="h-8 w-px bg-gray-100 mx-2"></div>
 
         {/* Admin User */}
         <div className="flex items-center gap-3 cursor-pointer p-1 hover:bg-gray-50 rounded-lg transition-colors">

@@ -39,7 +39,9 @@ export default function UserList() {
             <Users size={22} />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-800">Quản lý Người dùng</h1>
+            <h1 className="text-xl font-bold text-gray-800">
+              Quản lý Người dùng
+            </h1>
             <p className="text-xs text-gray-400">{users.length} người dùng</p>
           </div>
         </div>
@@ -69,19 +71,36 @@ export default function UserList() {
             </thead>
             <tbody className="divide-y divide-gray-50">
               {users.map((user) => (
-                <tr key={user.id} className="hover:bg-gray-50/50 transition-colors">
+                <tr
+                  key={user.id}
+                  className="hover:bg-gray-50/50 transition-colors"
+                >
                   <td className="px-5 py-4 text-sm text-gray-500">{user.id}</td>
-                  <td className="px-5 py-4 text-sm font-semibold text-gray-800">{user.name}</td>
-                  <td className="px-5 py-4 text-sm text-gray-600">{user.email}</td>
-                  <td className="px-5 py-4 text-sm text-gray-500">{user.phone || "—"}</td>
-                  <td className="px-5 py-4 text-sm text-gray-500">
-                    {user.date_of_birth ? new Date(user.date_of_birth).toLocaleDateString("vi-VN") : "—"}
+                  <td className="px-5 py-4 text-sm font-semibold text-gray-800">
+                    {user.name}
                   </td>
-                  <td className="px-5 py-4 text-sm text-gray-500">{user.country?.name || "—"}</td>
+                  <td className="px-5 py-4 text-sm text-gray-600">
+                    {user.email}
+                  </td>
+                  <td className="px-5 py-4 text-sm text-gray-500">
+                    {user.phone || "—"}
+                  </td>
+                  <td className="px-5 py-4 text-sm text-gray-500">
+                    {user.date_of_birth
+                      ? new Date(user.date_of_birth).toLocaleDateString("vi-VN")
+                      : "—"}
+                  </td>
+                  <td className="px-5 py-4 text-sm text-gray-500">
+                    {user.country?.name || "—"}
+                  </td>
                   <td className="px-5 py-4">
-                    <span className={`text-[10px] px-2.5 py-1 rounded-full font-bold uppercase ${
-                      user.role === "admin" ? "bg-violet-100 text-violet-600" : "bg-sky-100 text-sky-600"
-                    }`}>
+                    <span
+                      className={`text-[10px] px-2.5 py-1 rounded-full font-bold uppercase ${
+                        user.role === "admin"
+                          ? "bg-violet-100 text-violet-600"
+                          : "bg-sky-100 text-sky-600"
+                      }`}
+                    >
                       {user.role}
                     </span>
                   </td>
@@ -119,7 +138,10 @@ export default function UserList() {
               ))}
               {users.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="px-5 py-12 text-center text-gray-400 text-sm">
+                  <td
+                    colSpan={9}
+                    className="px-5 py-12 text-center text-gray-400 text-sm"
+                  >
                     Chưa có người dùng nào.
                   </td>
                 </tr>

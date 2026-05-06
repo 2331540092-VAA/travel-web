@@ -21,7 +21,14 @@ class BookingController extends Controller
     // Lấy chi tiết booking
     public function show($id)
     {
-        $booking = Booking::with('user')->findOrFail($id);
+        $booking = Booking::with([
+            'user',
+            'tour:id,name',
+            'hotel:id,name',
+            'restaurant:id,name',
+            'hotelRoom:id,name',
+            'restaurantTable:id,name',
+        ])->findOrFail($id);
         return response()->json($booking);
     }
 

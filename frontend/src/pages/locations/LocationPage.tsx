@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom"; // Import Link để điều hướng
-import { Search, MapPin, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, MapPin, ChevronLeft, ChevronRight, Heart } from "lucide-react";
 
 interface Country {
   id: number;
@@ -21,9 +21,12 @@ interface Location {
 }
 
 export default function LocationPage() {
-  const [randomSeed, setRandomSeed] = useState(Date.now());
+  const [randomSeed, setRandomSeed] = useState(() => Date.now());
   const [countries, setCountries] = useState<Country[]>([]);
   const [allLocations, setAllLocations] = useState<Location[]>([]);
+  const [favoriteIds, setFavoriteIds] = useState<number[]>(() =>
+    JSON.parse(localStorage.getItem("favorite_locations") || "[]"),
+  );
   const [countryId, setCountryId] = useState<number | "all">("all");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -51,9 +54,23 @@ export default function LocationPage() {
       .then(setAllLocations);
   }, []);
 
-  useEffect(() => {
-    setPage(1);
-  }, [countryId, search]);
+  const toggleFavorite = (
+    event: React.MouseEvent<HTMLButtonElement>,
+    locationId: number,
+  ) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    setFavoriteIds((prev) => {
+      const next = prev.includes(locationId)
+        ? prev.filter((id) => id !== locationId)
+        : [...prev, locationId];
+
+      localStorage.setItem("favorite_locations", JSON.stringify(next));
+      return next;
+    });
+  };
+
 
   /* Logic lọc */
   const filteredBase = allLocations.filter((loc) => {
@@ -106,7 +123,7 @@ export default function LocationPage() {
               type="text"
               placeholder="Bạn muốn đi đâu hôm nay?"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
               className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border-none rounded-2xl text-slate-800 font-medium placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
             />
           </div>
@@ -123,6 +140,7 @@ export default function LocationPage() {
                 onChange={(e) => {
                   const val = e.target.value;
                   setCountryId(val === "all" ? "all" : Number(val));
+                  setPage(1);
                 }}
                 className="w-full pl-11 pr-10 py-3.5 bg-slate-50 border-none rounded-2xl text-slate-700 font-semibold appearance-none focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer transition-all shadow-sm hover:bg-slate-100"
               >
@@ -168,6 +186,26 @@ export default function LocationPage() {
                   to={`/locations/${item.id}`}
                   className="group relative block rounded-[2rem] overflow-hidden bg-white shadow-md hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 aspect-[4/5] w-full"
                 >
+                  <button
+                    type="button"
+                    onClick={(event) => toggleFavorite(event, item.id)}
+                    aria-label={
+                      favoriteIds.includes(item.id)
+                        ? "Bỏ khỏi yêu thích"
+                        : "Thêm vào yêu thích"
+                    }
+                    className="absolute top-4 right-4 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-slate-700 shadow-lg backdrop-blur-sm transition hover:scale-105"
+                  >
+                    <Heart
+                      className={
+                        favoriteIds.includes(item.id)
+                          ? "fill-rose-500 text-rose-500"
+                          : "text-slate-500"
+                      }
+                      size={20}
+                    />
+                  </button>
+
                   {/* Ảnh Nền */}
                   <div className="absolute inset-0 w-full h-full">
                     <img

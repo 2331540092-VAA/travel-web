@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:8000/api/admin/users";
+﻿const API_URL = `${import.meta.env.VITE_API_BASE}/api/admin/users`;
 
 export interface User {
   id?: number;
@@ -79,3 +79,6 @@ const UserService = {
 };
 
 export default UserService;
+
+
+

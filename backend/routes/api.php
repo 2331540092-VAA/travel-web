@@ -2,6 +2,9 @@
 
 use Illuminate\Support\Facades\Route;
 
+// Health check for Railway/Render deploy
+Route::get('/health', fn() => response()->json(['status' => 'ok']));
+
 /*
 |--------------------------------------------------------------------------
 | CONTROLLERS
@@ -38,6 +41,7 @@ use App\Http\Controllers\Admin\{
     TourController as AdminTourController,
     BlogController as AdminBlogController,
     TourScheduleController as AdminTourScheduleController,
+    TourDeparturesController as AdminTourDeparturesController,
     ReviewController as AdminReviewController,
     NotificationController as AdminNotificationController,
     ReportController as AdminReportController,
@@ -56,6 +60,8 @@ use App\Http\Controllers\Api\ThemeController;
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login',    [AuthController::class, 'login']);
 Route::post('/logout',   [AuthController::class, 'logout']);
+Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+Route::post('/reset-password',  [AuthController::class, 'resetPassword']);
 
 // Google OAuth
 Route::get('/auth/google',          [AuthController::class, 'redirectToGoogle']);
@@ -103,6 +109,7 @@ Route::prefix('admin')->group(function () {
     Route::get('bookings', [App\Http\Controllers\Admin\BookingController::class, 'index']);
     Route::get('bookings/{id}', [App\Http\Controllers\Admin\BookingController::class, 'show']);
     Route::patch('bookings/{id}', [App\Http\Controllers\Admin\BookingController::class, 'update']);
+    Route::delete('bookings/{id}', [App\Http\Controllers\Admin\BookingController::class, 'destroy']);
 
     // REVIEWS
     Route::get('reviews', [AdminReviewController::class, 'index']);
@@ -112,6 +119,7 @@ Route::prefix('admin')->group(function () {
 
     // NOTIFICATIONS
     Route::get('notifications', [AdminNotificationController::class, 'index']);
+    Route::get('notifications/unread-count', [AdminNotificationController::class, 'unreadCount']);
     Route::patch('notifications/{id}/read', [AdminNotificationController::class, 'markRead']);
     Route::patch('notifications/read-all', [AdminNotificationController::class, 'markAllRead']);
 
@@ -150,6 +158,15 @@ Route::prefix('admin')->group(function () {
     Route::post('restaurant-tables', [AdminRestaurantTableController::class, 'store']);
     Route::put('restaurant-tables/{id}', [AdminRestaurantTableController::class, 'update']);
     Route::delete('restaurant-tables/{id}', [AdminRestaurantTableController::class, 'destroy']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | TOUR DEPARTURES
+    |--------------------------------------------------------------------------
+    */
+
+    Route::apiResource('tour-departures', AdminTourDeparturesController::class);
+    Route::get('tours/{tour}/departures', [AdminTourDeparturesController::class, 'byTour']);
 
     /*
 |--------------------------------------------------------------------------
@@ -232,6 +249,7 @@ Route::get('/restaurants/{id}/tables', [RestaurantController::class, 'tables']);
 Route::post('/bookings', [BookingController::class, 'store']);
 Route::get('/bookings/{id}', [BookingController::class, 'show']);
 Route::post('/bookings/{id}/cancel', [BookingController::class, 'cancel']);
+Route::get('/bookings/{id}/pdf', [BookingController::class, 'downloadPdf']);
 Route::get('/my-bookings', [BookingController::class, 'myBookings']);
 
 
@@ -304,5 +322,6 @@ Route::get('/favorites/ids', [FavoriteController::class, 'ids']);
 */
 
 Route::get('/notifications', [NotificationController::class, 'index']);
+Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
 Route::patch('/notifications/{id}/read', [NotificationController::class, 'markRead']);
 Route::patch('/notifications/read-all', [NotificationController::class, 'markAllRead']);

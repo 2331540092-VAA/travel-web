@@ -24,8 +24,9 @@ export default function ReviewSection({
 
   const fetchReviews = async () => {
     try {
-      const data = await apiGet<any[]>(`/reviews?type=${type}&id=${entityId}`);
-      setReviews(data);
+      const result = await apiGet<any>(`/reviews?type=${type}&id=${entityId}`);
+      const list = Array.isArray(result) ? result : (result?.data ?? []);
+      setReviews(list);
     } catch (err) {
       console.error(err);
     }
