@@ -27,10 +27,12 @@ interface DailyRevenue {
   count: number;
 }
 
+const formatCurrency = (value: number) => `${value.toLocaleString("vi-VN")} VNĐ`;
+
 const Dashboard = () => {
   const [stats, setStats] = useState<StatItem[]>([]);
   const [recentBookings, setRecentBookings] = useState<any[]>([]);
-  const [revenue, setRevenue] = useState("0 VNĐ");
+  const [totalRevenue, setTotalRevenue] = useState("0 VNĐ");
   const [loading, setLoading] = useState(true);
   const [dailyRevenue, setDailyRevenue] = useState<DailyRevenue[]>([]);
   const [dateRange, setDateRange] = useState<{ from: string; to: string }>({ from: "", to: "" });
@@ -40,7 +42,7 @@ const Dashboard = () => {
       try {
         const data = await DashboardService.getStats();
         setStats(data.stats || []);
-        setRevenue(data.revenue || "0 VNĐ");
+        setTotalRevenue(data.revenue || "0 VNĐ");
         setRecentBookings(data.recent_bookings || []);
 
         // Lấy doanh thu 30 ngày gần nhất
@@ -102,7 +104,7 @@ const Dashboard = () => {
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
             Tổng Doanh Thu
           </p>
-          <p className="text-xl font-bold text-blue-600">{revenue}</p>
+          <p className="text-xl font-bold text-blue-600">{totalRevenue}</p>
         </div>
       </div>
 
@@ -228,15 +230,15 @@ const Dashboard = () => {
             <>
               {/* Chart */}
               {(() => {
-                const maxRev = Math.max(...dailyRevenue.map((d) => d.revenue), 1);
-                const totalRev = dailyRevenue.reduce((s, d) => s + d.revenue, 0);
-                const totalOrders = dailyRevenue.reduce((s, d) => s + d.count, 0);
+                const maxRev = Math.max(...dailyRevenue.map((d) => Number(d.revenue)), 1);
+                const totalRev = dailyRevenue.reduce((s, d) => s + Number(d.revenue), 0);
+                const totalOrders = dailyRevenue.reduce((s, d) => s + Number(d.count), 0);
                 return (
                   <>
                     {/* Summary */}
                     <div className="grid grid-cols-2 gap-3 mb-4">
                       <div className="bg-blue-50 rounded-xl p-3">
-                        <p className="text-[10px] text-blue-500 font-semibold uppercase">Doanh thu</p>
+                        <p className="text-[10px] text-blue-500 font-semibold uppercase">Tổng giá trị booking</p>
                         <p className="text-sm font-bold text-blue-700 mt-0.5">
                           {totalRev.toLocaleString("vi-VN")}đ
                         </p>
@@ -254,7 +256,7 @@ const Dashboard = () => {
                       </p>
                       <div className="flex items-end gap-[3px] h-28">
                         {dailyRevenue.map((d) => {
-                          const pct = (d.revenue / maxRev) * 100;
+                          const pct = (Number(d.revenue) / maxRev) * 100;
                           const dateStr = new Date(d.date).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" });
                           return (
                             <div
@@ -264,7 +266,7 @@ const Dashboard = () => {
                               {/* Tooltip */}
                               <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 hidden group-hover:block z-20 bg-gray-800 text-white text-[9px] px-2 py-1 rounded whitespace-nowrap shadow-lg">
                                 {dateStr}<br />
-                                {d.revenue.toLocaleString("vi-VN")}đ<br />
+                                {Number(d.revenue).toLocaleString("vi-VN")}đ<br />
                                 {d.count} đơn
                               </div>
                               <div

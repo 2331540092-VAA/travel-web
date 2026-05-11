@@ -4,7 +4,7 @@ import {
   deleteBooking,
   getBookings,
 } from "../../services/BookingService";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   ClipboardList,
   ExternalLink,
@@ -12,9 +12,20 @@ import {
   ChevronLeft,
   ChevronRight,
   Trash2,
+  X,
 } from "lucide-react";
 
+const statusLabels: Record<string, string> = {
+  pending: "Chờ xử lý",
+  confirmed: "Đã xác nhận",
+  completed: "Hoàn thành",
+  cancelled: "Đã hủy",
+  paid: "Đã thanh toán",
+};
+
 const BookingList: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const statusFilter = searchParams.get("status") || "";
   const [data, setData] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
@@ -22,7 +33,9 @@ const BookingList: React.FC = () => {
   // States cho Tìm kiếm và Phân trang
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 8; // Số lượng dòng trên mỗi trang
+  const [typeFilter, setTypeFilter] = useState("");
+  const [localStatusFilter, setLocalStatusFilter] = useState(statusFilter);
+  const itemsPerPage = 8;
 
   useEffect(() => {
     setLoading(true);
@@ -30,6 +43,11 @@ const BookingList: React.FC = () => {
       .then((res) => setData(res))
       .finally(() => setLoading(false));
   }, []);
+
+  // Sync localStatusFilter when URL param changes (e.g. navigated from Reports page)
+  useEffect(() => {
+    setLocalStatusFilter(statusFilter);
+  }, [statusFilter]);
 
   const handleDelete = async (bookingId: number) => {
     if (!window.confirm(`Bạn có chắc muốn xóa booking #${bookingId}?`)) {
@@ -49,12 +67,16 @@ const BookingList: React.FC = () => {
   };
 
   // 1. Xử lý lọc dữ liệu (Tìm theo User ID hoặc Loại đặt hoặc Trạng thái)
-  const filteredData = data.filter(
-    (item) =>
+  const filteredData = data.filter((item) => {
+    const matchesStatus = localStatusFilter ? item.status === localStatusFilter : true;
+    const matchesType = typeFilter ? item.booking_type === typeFilter : true;
+    const matchesSearch =
+      search === "" ||
       item.user_id?.toString().includes(search.toLowerCase()) ||
       item.booking_type?.toLowerCase().includes(search.toLowerCase()) ||
-      item.status?.toLowerCase().includes(search.toLowerCase()),
-  );
+      item.status?.toLowerCase().includes(search.toLowerCase());
+    return matchesStatus && matchesType && matchesSearch;
+  });
 
   // 2. Xử lý phân trang
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
@@ -85,23 +107,62 @@ const BookingList: React.FC = () => {
             </p>
           </div>
         </div>
+        {localStatusFilter && (
+          <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold px-3 py-1.5 rounded-full">
+            Lọc: {statusLabels[localStatusFilter] || localStatusFilter}
+            <button
+              onClick={() => { setLocalStatusFilter(""); setSearchParams({}); }}
+              className="ml-1 hover:text-blue-900"
+            >
+              <X size={12} />
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* SEARCH BAR */}
-      <div className="relative w-72">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-          <Search size={16} />
+      {/* SEARCH BAR + FILTER DROPDOWNS */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative w-72">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+            <Search size={16} />
+          </div>
+          <input
+            type="text"
+            placeholder="Tìm theo User ID, loại, trạng thái..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+          />
         </div>
-        <input
-          type="text"
-          placeholder="Tìm theo User ID, loại, trạng thái..."
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setCurrentPage(1);
-          }}
-          className="w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-        />
+
+        {/* Dropdown Loại đặt */}
+        <select
+          value={typeFilter}
+          onChange={(e) => { setTypeFilter(e.target.value); setCurrentPage(1); }}
+          className="py-2 px-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white text-gray-600"
+        >
+          <option value="">Tất cả loại</option>
+          <option value="hotel">Khách sạn</option>
+          <option value="restaurant">Nhà hàng</option>
+          <option value="tour">Tour</option>
+        </select>
+
+        {/* Dropdown Trạng thái */}
+        <select
+          value={localStatusFilter}
+          onChange={(e) => { setLocalStatusFilter(e.target.value); setSearchParams(e.target.value ? { status: e.target.value } : {}); setCurrentPage(1); }}
+          className="py-2 px-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white text-gray-600"
+        >
+          <option value="">Tất cả trạng thái</option>
+          <option value="pending">Chờ xác nhận</option>
+          <option value="confirmed">Đã xác nhận</option>
+          <option value="paid">Đã thanh toán</option>
+          <option value="cancelled">Đã hủy</option>
+          <option value="completed">Hoàn thành</option>
+        </select>
       </div>
 
       {/* TABLE */}

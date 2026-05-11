@@ -142,7 +142,7 @@ class PaymentController extends Controller
         ]);
 
         $booking = Booking::find($payment->booking_id);
-        $booking->update(['status' => 'paid']);
+        $booking->update(['status' => 'paid', 'payment_type' => 'full']);
 
         // Gửi webhook n8n
         $this->sendN8nWebhook($booking);
@@ -197,7 +197,7 @@ class PaymentController extends Controller
             $payment->update(['status' => 'completed']);
 
             $booking = Booking::find($payment->booking_id);
-            $booking->update(['status' => 'paid']);
+            $booking->update(['status' => 'paid', 'payment_type' => 'full']);
 
             // Gửi webhook n8n
             $this->sendN8nWebhook($booking);
@@ -384,7 +384,7 @@ class PaymentController extends Controller
                 $payment->update(['status' => 'completed']);
                 $booking = Booking::find($payment->booking_id);
                 if ($booking && $booking->status !== 'paid') {
-                    $booking->update(['status' => 'paid']);
+                    $booking->update(['status' => 'paid', 'payment_type' => 'full']);
                     $this->sendN8nWebhook($booking);
                     $this->notifyPaymentSuccess($booking);
                 }
@@ -410,7 +410,7 @@ class PaymentController extends Controller
                 $payment->update(['status' => 'completed']);
                 $booking = Booking::find($payment->booking_id);
                 if ($booking && $booking->status !== 'paid') {
-                    $booking->update(['status' => 'paid']);
+                    $booking->update(['status' => 'paid', 'payment_type' => 'full']);
                     $this->sendN8nWebhook($booking);
                     $this->notifyPaymentSuccess($booking);
                 }

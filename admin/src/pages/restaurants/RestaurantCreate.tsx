@@ -14,12 +14,10 @@ export default function RestaurantCreate() {
   const [form, setForm] = useState({
     location_id: "",
     name: "",
-    min_price: "",
-    max_price: "",
     discount_percent: 0,
     promotion_end: "",
     description: "",
-    menu_content: "", // Nhập liệu dạng: Tên món - Giá
+    menu_content: "",
     amenities: "",
     image_url: "",
     address: "",
@@ -63,19 +61,21 @@ export default function RestaurantCreate() {
             })
         : [];
 
+      // Tự tính min/max từ menu
+      const menuPrices = menuArray.filter((m: any) => m.price > 0).map((m: any) => m.price);
+      const min_price = menuPrices.length > 0 ? Math.min(...menuPrices) : null;
+      const max_price = menuPrices.length > 0 ? Math.max(...menuPrices) : null;
+
       const payload = {
         ...form,
         location_id: form.location_id ? Number(form.location_id) : null,
-        min_price: form.min_price ? Number(form.min_price) : null,
-        max_price: form.max_price ? Number(form.max_price) : null,
+        min_price,
+        max_price,
         lat: form.lat ? Number(form.lat) : null,
         lng: form.lng ? Number(form.lng) : null,
-
-        // Gửi thực đơn đã cấu trúc lại
         menu: menuArray,
-
         amenities: form.amenities
-          ? form.amenities.split(",").map((i) => i.trim())
+          ? form.amenities.split(",").map((i: string) => i.trim())
           : [],
         is_promotion: form.discount_percent > 0 || !!form.promotion_end,
       };
@@ -131,32 +131,6 @@ export default function RestaurantCreate() {
               </option>
             ))}
           </select>
-        </div>
-
-        {/* Giá cả */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className={labelClass}>Giá thấp nhất (VNĐ)</label>
-            <input
-              type="number"
-              name="min_price"
-              placeholder="VD: 50000"
-              value={form.min_price}
-              onChange={handleChange}
-              className={inputClass}
-            />
-          </div>
-          <div>
-            <label className={labelClass}>Giá cao nhất (VNĐ)</label>
-            <input
-              type="number"
-              name="max_price"
-              placeholder="VD: 500000"
-              value={form.max_price}
-              onChange={handleChange}
-              className={inputClass}
-            />
-          </div>
         </div>
 
         {/* Khuyến mãi */}

@@ -139,14 +139,8 @@ export default function RestaurantTableCreate() {
 
   return (
     <div className="p-6 space-y-8 max-w-6xl mx-auto">
-      <div className="flex justify-between items-center">
+      <div className="flex items-center">
         <h1 className="text-2xl font-bold text-gray-800">Quản lý Bàn ăn</h1>
-        <button
-          onClick={() => navigate("/admin/restaurants")}
-          className="text-sm text-blue-600 hover:underline"
-        >
-          ← Quay lại nhà hàng
-        </button>
       </div>
 
       <form
@@ -257,6 +251,13 @@ export default function RestaurantTableCreate() {
               Hủy sửa
             </button>
           )}
+          <button
+            type="button"
+            onClick={() => navigate("/admin/restaurants")}
+            className="bg-white text-gray-600 border border-gray-200 px-8 py-2.5 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
+          >
+            Quay lại
+          </button>
         </div>
       </form>
 

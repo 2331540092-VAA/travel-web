@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   FileText,
   Download,
@@ -8,6 +9,7 @@ import {
   Calendar,
   BarChart3,
   PieChart,
+  ShieldCheck,
 } from "lucide-react";
 import ReportService from "../../services/ReportService";
 
@@ -15,6 +17,7 @@ interface ReportData {
   from: string;
   to: string;
   total_bookings: number;
+  non_cancelled_bookings: number;
   total_revenue: number;
   paid_revenue: number;
   by_type: Array<{ booking_type: string; count: number; revenue: number }>;
@@ -45,13 +48,14 @@ const statusLabels: Record<string, string> = {
 
 const statusColors: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-700",
-  confirmed: "bg-blue-100 text-blue-700",
-  completed: "bg-green-100 text-green-700",
+  confirmed: "bg-green-100 text-green-700",
+  completed: "bg-emerald-100 text-emerald-700",
   cancelled: "bg-red-100 text-red-700",
-  paid: "bg-purple-100 text-purple-700",
+  paid: "bg-blue-100 text-blue-700",
 };
 
 const Reports = () => {
+  const navigate = useNavigate();
   const [from, setFrom] = useState(() => {
     const d = new Date();
     d.setDate(1);
@@ -60,6 +64,8 @@ const Reports = () => {
   const [to, setTo] = useState(() => new Date().toISOString().split("T")[0]);
   const [data, setData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [activeDailyTooltip, setActiveDailyTooltip] = useState<string | null>(null);
+  const dailyChartRef = useRef<HTMLDivElement | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -77,6 +83,32 @@ const Reports = () => {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+
+      const clickedBar = target.closest("[data-daily-bar='true']");
+      if (clickedBar) return;
+
+      setActiveDailyTooltip(null);
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!activeDailyTooltip) return;
+    const currentDailyRevenue = data?.daily_revenue ?? [];
+    const exists = currentDailyRevenue.some((d) => d.date === activeDailyTooltip);
+    if (!exists) {
+      setActiveDailyTooltip(null);
+    }
+  }, [data, activeDailyTooltip]);
+
   const handleExport = () => {
     window.open(ReportService.getExportUrl(from, to), "_blank");
   };
@@ -84,9 +116,14 @@ const Reports = () => {
   const formatMoney = (v: number) =>
     v.toLocaleString("vi-VN") + "đ";
 
-  const maxDailyRevenue = data?.daily_revenue?.length
-    ? Math.max(...data.daily_revenue.map((d) => d.revenue))
+  const dailyRevenue = data?.daily_revenue ?? [];
+  const maxDailyRevenue = dailyRevenue.length
+    ? Math.max(...dailyRevenue.map((d) => d.revenue))
     : 0;
+  const showDayLabelEvery = dailyRevenue.length > 10
+    ? Math.ceil(dailyRevenue.length / 8)
+    : 1;
+  const activeDailyItem = dailyRevenue.find((d) => d.date === activeDailyTooltip) ?? null;
 
   return (
     <div className="space-y-6">
@@ -158,13 +195,13 @@ const Reports = () => {
       {data && (
         <>
           {/* Summary Cards */}
-          <div className="grid grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
             <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
                   <ShoppingCart size={20} className="text-blue-600" />
                 </div>
-                <span className="text-sm text-gray-500">Tổng đơn đặt</span>
+                <span className="text-sm text-gray-500">Tổng số booking</span>
               </div>
               <p className="text-3xl font-bold text-gray-800">
                 {data.total_bookings.toLocaleString()}
@@ -173,10 +210,22 @@ const Reports = () => {
 
             <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
               <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-cyan-50 rounded-xl flex items-center justify-center">
+                  <ShieldCheck size={20} className="text-cyan-600" />
+                </div>
+                <span className="text-sm text-gray-500">Booking không bị hủy</span>
+              </div>
+              <p className="text-3xl font-bold text-gray-800">
+                {data.non_cancelled_bookings.toLocaleString()}
+              </p>
+            </div>
+
+            <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+              <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center">
                   <TrendingUp size={20} className="text-emerald-600" />
                 </div>
-                <span className="text-sm text-gray-500">Doanh thu</span>
+                <span className="text-sm text-gray-500">Tổng giá trị booking</span>
               </div>
               <p className="text-3xl font-bold text-gray-800">
                 {formatMoney(data.total_revenue)}
@@ -188,7 +237,7 @@ const Reports = () => {
                 <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center">
                   <CreditCard size={20} className="text-purple-600" />
                 </div>
-                <span className="text-sm text-gray-500">Đã thanh toán</span>
+                <span className="text-sm text-gray-500">Doanh thu đã thanh toán</span>
               </div>
               <p className="text-3xl font-bold text-gray-800">
                 {formatMoney(data.paid_revenue)}
@@ -249,7 +298,8 @@ const Reports = () => {
                 {data.by_status.map((item) => (
                   <div
                     key={item.status}
-                    className="flex items-center justify-between p-2.5 rounded-lg bg-gray-50"
+                    onClick={() => navigate(`/admin/bookings?status=${item.status}`)}
+                    className="flex items-center justify-between p-2.5 rounded-lg bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"
                   >
                     <span
                       className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
@@ -287,7 +337,7 @@ const Reports = () => {
                     className="bg-gray-50 rounded-xl p-4 text-center"
                   >
                     <p className="text-lg font-bold text-gray-800 uppercase">
-                      {item.method}
+                      {item.method === 'full' ? 'Thanh toán đầy đủ' : item.method}
                     </p>
                     <p className="text-xs text-gray-500 mt-1">
                       {item.count} giao dịch
@@ -301,45 +351,108 @@ const Reports = () => {
             </div>
           )}
 
-          {/* Daily Revenue Chart (simple bars) */}
-          {data.daily_revenue.length > 0 && (
+          {/* Daily Revenue Chart */}
+          {dailyRevenue.length > 0 && (
             <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
               <h3 className="font-bold text-gray-800 flex items-center gap-2 mb-4">
                 <TrendingUp size={18} className="text-blue-600" />
                 Doanh thu theo ngày
               </h3>
-              <div className="flex items-end gap-1 h-40">
-                {data.daily_revenue.map((d) => {
+              <div
+                ref={dailyChartRef}
+                className="rounded-xl border border-blue-100 bg-gradient-to-b from-blue-50/50 to-white p-4"
+              >
+                <div className="h-56">
+                  <div className="relative h-full">
+                    <div className="pointer-events-none absolute inset-0 flex flex-col justify-between">
+                      {[100, 75, 50, 25, 0].map((tick) => (
+                        <div key={tick} className="border-t border-dashed border-gray-200" />
+                      ))}
+                    </div>
+
+                    <div className="relative z-10 h-full overflow-x-auto pb-2">
+                      <div
+                        className="h-full flex items-end gap-2 px-1"
+                        style={{ minWidth: `${Math.max(dailyRevenue.length * 36, 320)}px` }}
+                      >
+                {dailyRevenue.map((d, index) => {
                   const pct =
                     maxDailyRevenue > 0
                       ? (d.revenue / maxDailyRevenue) * 100
                       : 0;
+                  const tooltipText = `${new Date(d.date).toLocaleDateString("vi-VN")}: ${formatMoney(d.revenue)} (${d.count} đơn)`;
+                  const isActive = activeDailyTooltip === d.date;
                   return (
                     <div
                       key={d.date}
-                      className="flex-1 flex flex-col items-center group relative"
+                      className="relative h-full w-8 flex flex-col justify-end items-center cursor-pointer"
+                      data-daily-bar="true"
+                      onClick={() => {
+                        setActiveDailyTooltip((prev) => (prev === d.date ? null : d.date));
+                      }}
+                      title={tooltipText}
                     >
                       <div
-                        className="w-full bg-gradient-to-t from-blue-600 to-blue-400 rounded-t-sm min-h-[2px] hover:from-blue-700 hover:to-blue-500 transition-colors"
-                        style={{ height: `${Math.max(pct, 2)}%` }}
+                        className={`w-6 rounded-t-md min-h-[10px] shadow-sm transition-colors cursor-pointer ${
+                          isActive
+                            ? "bg-gradient-to-t from-blue-700 via-blue-600 to-cyan-500"
+                            : "bg-gradient-to-t from-blue-600 via-blue-500 to-cyan-400 hover:from-blue-700 hover:to-cyan-500"
+                        }`}
+                        style={{ height: `${Math.max(pct, 3)}%` }}
+                        aria-label={tooltipText}
+                        data-daily-bar="true"
                       />
-                      <div className="absolute bottom-full mb-1 hidden group-hover:block bg-gray-800 text-white text-[10px] px-2 py-1 rounded whitespace-nowrap z-10">
-                        {new Date(d.date).toLocaleDateString("vi-VN")}:{" "}
-                        {formatMoney(d.revenue)} ({d.count} đơn)
+                      <div className={`absolute bottom-full mb-2 bg-gray-900 text-white text-[10px] px-2 py-1 rounded whitespace-nowrap z-10 ${isActive ? "block" : "hidden"}`}>
+                        {tooltipText}
                       </div>
+                      {(index % showDayLabelEvery === 0 || index === dailyRevenue.length - 1) && (
+                        <span className="mt-1 text-[10px] text-gray-500">
+                          {new Date(d.date).toLocaleDateString("vi-VN", {
+                            day: "2-digit",
+                            month: "2-digit",
+                          })}
+                        </span>
+                      )}
                     </div>
                   );
                 })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
+                  <span>
+                    Cao nhất: {formatMoney(maxDailyRevenue)}
+                  </span>
+                  <span>
+                    Tổng: {formatMoney(dailyRevenue.reduce((sum, d) => sum + d.revenue, 0))}
+                  </span>
+                </div>
+
+                <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50/60 px-3 py-2 text-sm">
+                  {activeDailyItem ? (
+                    <div className="flex flex-wrap items-center gap-3 text-gray-700">
+                      <span className="font-semibold text-blue-700">
+                        {new Date(activeDailyItem.date).toLocaleDateString("vi-VN")}
+                      </span>
+                      <span>Doanh thu: <strong>{formatMoney(activeDailyItem.revenue)}</strong></span>
+                      <span>Số đơn: <strong>{activeDailyItem.count}</strong></span>
+                    </div>
+                  ) : (
+                    <span className="text-gray-500">Nhấp vào một cột để xem chi tiết doanh thu ngày đó.</span>
+                  )}
+                </div>
               </div>
-              <div className="flex justify-between mt-2 text-[10px] text-gray-400">
+              <div className="flex justify-between mt-2 text-[10px] text-gray-400 px-1">
                 <span>
-                  {new Date(data.daily_revenue[0].date).toLocaleDateString(
+                  {new Date(dailyRevenue[0].date).toLocaleDateString(
                     "vi-VN"
                   )}
                 </span>
                 <span>
                   {new Date(
-                    data.daily_revenue[data.daily_revenue.length - 1].date
+                    dailyRevenue[dailyRevenue.length - 1].date
                   ).toLocaleDateString("vi-VN")}
                 </span>
               </div>

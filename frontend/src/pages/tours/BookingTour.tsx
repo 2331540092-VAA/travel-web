@@ -50,7 +50,7 @@ export default function BookingTour() {
   }
 
   const price = departure.price;
-  const discount = departure.discount_percent || 0;
+  const discount = (departure.is_promotion && departure.discount_percent) ? departure.discount_percent : 0;
   const finalPrice = discount > 0 ? price - (price * discount) / 100 : price;
   const total = finalPrice * people;
 

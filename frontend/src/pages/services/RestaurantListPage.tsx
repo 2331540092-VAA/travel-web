@@ -8,11 +8,15 @@ interface Service {
   image_url?: string;
   rating?: number;
   avg_price?: number;
+  min_price?: number;
+  max_price?: number;
+  discount_percent?: number;
+  is_promotion?: boolean;
+  promotion_end?: string;
 }
 
 interface RawService extends Service {
   image?: string;
-  min_price?: number;
 }
 
 export default function RestaurantListPage() {
@@ -31,6 +35,9 @@ export default function RestaurantListPage() {
           ...item,
           image_url: item.image_url || item.image || "",
           avg_price: item.avg_price || item.min_price || 0,
+          discount_percent: item.discount_percent || 0,
+          is_promotion: item.is_promotion || false,
+          promotion_end: item.promotion_end || null,
         }));
         setRestaurants(restaurantData);
       } catch (error) {

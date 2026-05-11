@@ -24,22 +24,40 @@ export default function Payment() {
 
     // Nếu là tour
     if (tourId && price && people && date) {
-      const data = {
+      const baseData = {
         type: "tour",
         tourId,
         price: Number(price),
         people: Number(people),
         date,
-        tourName,
+        tourName: tourName || "",
       };
-      setBookingData(data);
-      console.log("[Payment] bookingData (tour):", data);
+
+      if (tourName) {
+        setBookingData(baseData);
+        console.log("[Payment] bookingData (tour):", baseData);
+      } else {
+        // tourName bị thiếu → fetch tên tour từ API
+        const apiBase = import.meta.env.VITE_API_BASE
+          ? import.meta.env.VITE_API_BASE + "/api"
+          : "http://127.0.0.1:8000/api";
+        fetch(`${apiBase}/tours/${tourId}`)
+          .then((res) => res.json())
+          .then((tour) => {
+            const dataWithName = { ...baseData, tourName: tour.name || "" };
+            setBookingData(dataWithName);
+            console.log("[Payment] bookingData (tour, fetched name):", dataWithName);
+          })
+          .catch(() => {
+            setBookingData(baseData);
+          });
+      }
       return;
     }
 
     // Nếu là dịch vụ (hotel/restaurant)
     if (bookingId && price && people && date && serviceType && serviceId) {
-      const data = {
+      const baseData = {
         type: serviceType,
         bookingId,
         price: Number(price),
@@ -47,9 +65,34 @@ export default function Payment() {
         date,
         serviceId,
         itemId,
+        serviceName: "",
+        itemName: "",
       };
-      setBookingData(data);
-      console.log("[Payment] bookingData (service):", data);
+      setBookingData(baseData);
+
+      // Fetch tên dịch vụ (hotel / restaurant)
+      const apiBase = import.meta.env.VITE_API_BASE
+        ? import.meta.env.VITE_API_BASE + "/api"
+        : "http://127.0.0.1:8000/api";
+
+      const endpoint = serviceType === "hotel" ? "hotels" : "restaurants";
+      const itemEndpoint = serviceType === "hotel" ? "rooms" : "tables";
+
+      Promise.all([
+        fetch(`${apiBase}/${endpoint}/${serviceId}`).then((r) => r.json()),
+        itemId
+          ? fetch(`${apiBase}/${endpoint}/${serviceId}/${itemEndpoint}`).then((r) => r.json())
+          : Promise.resolve([]),
+      ])
+        .then(([serviceData, itemsData]) => {
+          const serviceName = serviceData?.name || "";
+          const items = Array.isArray(itemsData) ? itemsData : [];
+          const matchedItem = items.find((it: any) => String(it.id) === String(itemId));
+          const itemName = matchedItem?.name || "";
+          setBookingData((prev: any) => ({ ...prev, serviceName, itemName }));
+        })
+        .catch(() => {/* giữ nguyên nếu lỗi */});
+
       return;
     }
 
@@ -188,26 +231,20 @@ export default function Payment() {
             ) : (
               <>
                 <div className="flex justify-between items-center pb-4 border-b border-gray-200">
-                  <span className="text-gray-600">Loại dịch vụ:</span>
-                  <span className="font-semibold text-gray-800">
-                    {bookingData.type === "hotel"
-                      ? "Khách sạn"
-                      : bookingData.type === "restaurant"
-                        ? "Nhà hàng"
-                        : bookingData.type}
+                  <span className="text-gray-600">
+                    {bookingData.type === "hotel" ? "Khách sạn:" : "Nhà hàng:"}
                   </span>
-                </div>
-                <div className="flex justify-between items-center pb-4 border-b border-gray-200">
-                  <span className="text-gray-600">Mã dịch vụ:</span>
                   <span className="font-semibold text-gray-800">
-                    {bookingData.serviceId}
+                    {bookingData.serviceName || bookingData.serviceId}
                   </span>
                 </div>
                 {bookingData.itemId && (
                   <div className="flex justify-between items-center pb-4 border-b border-gray-200">
-                    <span className="text-gray-600">Mã phòng/bàn:</span>
+                    <span className="text-gray-600">
+                      {bookingData.type === "hotel" ? "Phòng:" : "Bàn:"}
+                    </span>
                     <span className="font-semibold text-gray-800">
-                      {bookingData.itemId}
+                      {bookingData.itemName || bookingData.itemId}
                     </span>
                   </div>
                 )}

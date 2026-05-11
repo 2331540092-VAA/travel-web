@@ -21,7 +21,7 @@ return new class extends Migration
             $table->date('booking_date')->nullable();
             $table->integer('quantity')->default(1);
             $table->decimal('total_amount', 12, 2)->nullable();
-            $table->string('payment_type')->default('deposit');
+            $table->string('payment_type')->default('full');
             $table->string('status')->default('pending');
             $table->text('note')->nullable();
             $table->timestamps();

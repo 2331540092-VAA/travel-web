@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import TourService from "../../services/TourService";
 import { Tag } from "lucide-react"; // Thêm icon Tag cho đẹp
@@ -23,23 +23,16 @@ export default function TourDepartureList() {
   const [departures, setDepartures] = useState<Departure[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (id) {
-      fetchDepartures();
-      fetchTour();
-    }
-  }, [id]);
-
-  async function fetchTour() {
+  const fetchTour = useCallback(async () => {
     try {
       const tour = await TourService.getTour(Number(id));
       setTourName(tour.name);
     } catch (error) {
       console.error("Lỗi tải thông tin tour:", error);
     }
-  }
+  }, [id]);
 
-  async function fetchDepartures() {
+  const fetchDepartures = useCallback(async () => {
     try {
       const data = await TourService.getDeparturesByTour(Number(id));
       const sortedData = data.sort(
@@ -53,7 +46,14 @@ export default function TourDepartureList() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [id]);
+
+  useEffect(() => {
+    if (id) {
+      fetchDepartures();
+      fetchTour();
+    }
+  }, [id, fetchDepartures, fetchTour]);
 
   async function handleDelete(depId: number) {
     if (!confirm("Bạn có chắc chắn muốn xóa ngày khởi hành này không?")) return;
@@ -167,7 +167,7 @@ export default function TourDepartureList() {
                     {/* Cột Giá & Khuyến mãi */}
                     <td className="px-5 py-4 text-right">
                       <div className="flex flex-col items-end">
-                        {d.discount_percent > 0 ? (
+                        {d.is_promotion && d.discount_percent > 0 ? (
                           <>
                             <div className="flex items-center gap-2">
                               <span className="text-[10px] bg-red-500 text-white px-1.5 py-0.5 rounded font-bold">

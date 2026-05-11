@@ -30,6 +30,20 @@ export default function HotelsList() {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
 
+  // ✅ sort
+  const [sortField, setSortField] = useState<"rating" | "discount_percent" | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
+  const toggleSort = (field: "rating" | "discount_percent") => {
+    if (sortField === field) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDir("desc");
+    }
+    setCurrentPage(1);
+  };
+
   useEffect(() => {
     fetchHotels();
   }, []);
@@ -60,15 +74,18 @@ export default function HotelsList() {
     hotel.name.toLowerCase().includes(search.toLowerCase()),
   );
 
+  // ✅ SORT
+  const sortedHotels = [...filteredHotels].sort((a, b) => {
+    if (!sortField) return 0;
+    const va = Number(a[sortField] ?? 0);
+    const vb = Number(b[sortField] ?? 0);
+    return sortDir === "asc" ? va - vb : vb - va;
+  });
+
   // ✅ PAGINATION
-  const totalPages = Math.ceil(filteredHotels.length / ITEMS_PER_PAGE);
-
+  const totalPages = Math.ceil(sortedHotels.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-
-  const currentData = filteredHotels.slice(
-    startIndex,
-    startIndex + ITEMS_PER_PAGE,
-  );
+  const currentData = sortedHotels.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   if (loading)
     return (
@@ -128,9 +145,19 @@ export default function HotelsList() {
                 <th className="px-5 py-3 text-left">Hình ảnh</th>
                 <th className="px-5 py-3 text-left">Tên</th>
                 <th className="px-5 py-3 text-left">Khu vực</th>
-                <th className="px-5 py-3 text-center">Rating</th>
+                <th
+                  className="px-5 py-3 text-center cursor-pointer select-none hover:text-gray-600"
+                  onClick={() => toggleSort("rating")}
+                >
+                  Đánh giá {sortField === "rating" ? (sortDir === "desc" ? "↓" : "↑") : "↕"}
+                </th>
                 <th className="px-5 py-3 text-right">Giá/đêm</th>
-                <th className="px-5 py-3 text-center">Giảm giá</th>
+                <th
+                  className="px-5 py-3 text-center cursor-pointer select-none hover:text-gray-600"
+                  onClick={() => toggleSort("discount_percent")}
+                >
+                  Giảm giá {sortField === "discount_percent" ? (sortDir === "desc" ? "↓" : "↑") : "↕"}
+                </th>
                 <th className="px-5 py-3 text-center">Hành động</th>
               </tr>
             </thead>

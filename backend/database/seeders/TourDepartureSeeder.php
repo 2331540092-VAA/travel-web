@@ -15,6 +15,25 @@ class TourDepartureSeeder extends Seeder
     {
         $now = Carbon::now();
 
+        DB::table('tour_departures')->truncate();
+
+        $tourNameByLegacyId = [
+            1 => 'Tour Đà Nẵng 3N2Đ: Đường lên Tiên Cảnh',
+            2 => 'Tour Hà Nội: Hào khí Thăng Long',
+            3 => 'Tour Bangkok - Pattaya: Xứ sở Chùa Vàng',
+            4 => 'Tour Singapore: Đảo quốc Sư Tử',
+            5 => 'Tour Bali: Thiên đường nhiệt đới',
+            6 => 'Tour Tokyo: Hiện đại và Truyền thống',
+            7 => 'Tour Seoul - Nami: Bản tình ca mùa đông',
+            8 => 'Tour Bắc Kinh: Vẻ đẹp vĩnh cửu',
+            9 => 'Tour Lào: Đất nước Triệu Voi',
+            10 => 'Tour Campuchia: Bí ẩn Angkor',
+            11 => 'Tour Vịnh Hạ Long: Du thuyền giữa Kỳ Quan',
+            12 => 'Tour Phuket 4N3Đ: Biển Andaman Rực Nắng',
+            13 => 'Tour Kyoto 4N3Đ: Nét Đẹp Cố Đô Nhật Bản',
+            14 => 'Tour Jeju 4N3Đ: Đảo Tình Yêu Gió Biển',
+        ];
+
         $departures = [
             // TOUR 1: Đà Nẵng
             ['tour_id' => 1, 'departure_date' => '2026-06-01', 'capacity' => 20, 'booked' => 5, 'price' => 5000000, 'discount_percent' => 10, 'is_promotion' => true, 'promotion_end' => '2026-05-25 23:59:59', 'status' => 'available'],
@@ -59,9 +78,34 @@ class TourDepartureSeeder extends Seeder
             // TOUR 11: Hạ Long
             ['tour_id' => 11, 'departure_date' => '2026-06-11', 'capacity' => 20, 'booked' => 6, 'price' => 6500000, 'discount_percent' => 15, 'is_promotion' => true, 'promotion_end' => '2026-06-05 23:59:59', 'status' => 'available'],
             ['tour_id' => 11, 'departure_date' => '2026-07-02', 'capacity' => 20, 'booked' => 9, 'price' => 6800000, 'discount_percent' => 0, 'is_promotion' => false, 'promotion_end' => null, 'status' => 'available'],
+
+            // TOUR 12: Phuket
+            ['tour_id' => 12, 'departure_date' => '2026-06-14', 'capacity' => 20, 'booked' => 7, 'price' => 7900000, 'discount_percent' => 10, 'is_promotion' => true, 'promotion_end' => '2026-06-08 23:59:59', 'status' => 'available'],
+            ['tour_id' => 12, 'departure_date' => '2026-07-06', 'capacity' => 20, 'booked' => 10, 'price' => 8200000, 'discount_percent' => 0, 'is_promotion' => false, 'promotion_end' => null, 'status' => 'available'],
+
+            // TOUR 13: Kyoto
+            ['tour_id' => 13, 'departure_date' => '2026-06-16', 'capacity' => 18, 'booked' => 6, 'price' => 9800000, 'discount_percent' => 5, 'is_promotion' => true, 'promotion_end' => '2026-06-10 23:59:59', 'status' => 'available'],
+            ['tour_id' => 13, 'departure_date' => '2026-07-10', 'capacity' => 18, 'booked' => 8, 'price' => 10200000, 'discount_percent' => 0, 'is_promotion' => false, 'promotion_end' => null, 'status' => 'available'],
+
+            // TOUR 14: Jeju
+            ['tour_id' => 14, 'departure_date' => '2026-06-18', 'capacity' => 22, 'booked' => 9, 'price' => 9100000, 'discount_percent' => 8, 'is_promotion' => true, 'promotion_end' => '2026-06-12 23:59:59', 'status' => 'available'],
+            ['tour_id' => 14, 'departure_date' => '2026-07-12', 'capacity' => 22, 'booked' => 12, 'price' => 9400000, 'discount_percent' => 0, 'is_promotion' => false, 'promotion_end' => null, 'status' => 'available'],
         ];
 
         foreach ($departures as &$item) {
+            $legacyTourId = (int) $item['tour_id'];
+            $tourName = $tourNameByLegacyId[$legacyTourId] ?? null;
+
+            if (!$tourName) {
+                throw new \RuntimeException("Không tìm thấy mapping tour cho legacy id: {$legacyTourId}");
+            }
+
+            $actualTourId = DB::table('tours')->where('name', $tourName)->value('id');
+            if (!$actualTourId) {
+                throw new \RuntimeException("Không tìm thấy tour '{$tourName}' trong bảng tours");
+            }
+
+            $item['tour_id'] = (int) $actualTourId;
             $item['created_at'] = $now;
             $item['updated_at'] = $now;
         }

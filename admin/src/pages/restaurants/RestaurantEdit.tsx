@@ -17,9 +17,7 @@ export default function RestaurantEdit() {
   const [form, setForm] = useState({
     location_id: "",
     name: "",
-    min_price: "",
-    max_price: "",
-    discount_percent: "0", // Chuyển về string để đồng bộ với input text
+    discount_percent: "0",
     promotion_end: "",
     description: "",
     menu_content: "",
@@ -55,9 +53,6 @@ export default function RestaurantEdit() {
       setForm({
         location_id: data.location_id || "",
         name: data.name || "",
-        // Làm sạch số nguyên khi load từ DB lên
-        min_price: data.min_price ? Math.floor(data.min_price).toString() : "",
-        max_price: data.max_price ? Math.floor(data.max_price).toString() : "",
         discount_percent: data.discount_percent
           ? Math.floor(data.discount_percent).toString()
           : "0",
@@ -94,8 +89,8 @@ export default function RestaurantEdit() {
   const handleChange = (e: any) => {
     const { name, value, type, checked } = e.target;
 
-    // Xử lý chặn số lẻ ngay khi gõ cho các trường giá và giảm giá
-    if (["min_price", "max_price", "discount_percent"].includes(name)) {
+    // Ngăn nhập ký tự không phải số cho trường giảm giá
+    if (["discount_percent"].includes(name)) {
       const onlyNumbers = value.replace(/\D/g, "");
       setForm((prev) => ({ ...prev, [name]: onlyNumbers }));
       return;
@@ -130,11 +125,16 @@ export default function RestaurantEdit() {
             })
         : [];
 
+      // Tự tính min/max từ menu
+      const menuPrices = menuArray.filter((m) => m.price > 0).map((m) => m.price);
+      const min_price = menuPrices.length > 0 ? Math.min(...menuPrices) : null;
+      const max_price = menuPrices.length > 0 ? Math.max(...menuPrices) : null;
+
       const payload = {
         ...form,
         location_id: form.location_id ? Number(form.location_id) : null,
-        min_price: form.min_price ? Number(form.min_price) : null,
-        max_price: form.max_price ? Number(form.max_price) : null,
+        min_price,
+        max_price,
         discount_percent: Number(form.discount_percent),
         lat: form.lat ? Number(form.lat) : null,
         lng: form.lng ? Number(form.lng) : null,
@@ -200,31 +200,6 @@ export default function RestaurantEdit() {
               </option>
             ))}
           </select>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className={labelClass}>Giá thấp nhất (VNĐ)</label>
-            <input
-              type="text"
-              inputMode="numeric"
-              name="min_price"
-              value={form.min_price}
-              onChange={handleChange}
-              className={inputClass}
-            />
-          </div>
-          <div>
-            <label className={labelClass}>Giá cao nhất (VNĐ)</label>
-            <input
-              type="text"
-              inputMode="numeric"
-              name="max_price"
-              value={form.max_price}
-              onChange={handleChange}
-              className={inputClass}
-            />
-          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -12,6 +12,20 @@ export default function RestaurantList() {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
 
+  // ✅ sort
+  const [sortField, setSortField] = useState<"rating" | "discount_percent" | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
+  const toggleSort = (field: "rating" | "discount_percent") => {
+    if (sortField === field) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDir("desc");
+    }
+    setCurrentPage(1);
+  };
+
   const loadRestaurants = async () => {
     try {
       const data = await RestaurantService.getRestaurants();
@@ -42,12 +56,20 @@ export default function RestaurantList() {
     restaurant.name.toLowerCase().includes(search.toLowerCase()),
   );
 
+  // ✅ SORT
+  const sortedRestaurants = [...filteredRestaurants].sort((a, b) => {
+    if (!sortField) return 0;
+    const va = Number(a[sortField] ?? 0);
+    const vb = Number(b[sortField] ?? 0);
+    return sortDir === "asc" ? va - vb : vb - va;
+  });
+
   // ✅ PAGINATION
-  const totalPages = Math.ceil(filteredRestaurants.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(sortedRestaurants.length / ITEMS_PER_PAGE);
 
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
 
-  const currentData = filteredRestaurants.slice(
+  const currentData = sortedRestaurants.slice(
     startIndex,
     startIndex + ITEMS_PER_PAGE,
   );
@@ -106,9 +128,19 @@ export default function RestaurantList() {
                 <th className="px-5 py-3.5 text-left">Hình ảnh</th>
                 <th className="px-5 py-3.5 text-left">Tên</th>
                 <th className="px-5 py-3.5 text-left">Khu vực</th>
+                <th
+                  className="px-5 py-3.5 text-center cursor-pointer select-none hover:text-gray-600"
+                  onClick={() => toggleSort("rating")}
+                >
+                  Đánh giá {sortField === "rating" ? (sortDir === "desc" ? "↓" : "↑") : "↕"}
+                </th>
                 <th className="px-5 py-3.5 text-right">Giá TB</th>
-                <th className="px-5 py-3.5 text-center">Đánh giá</th>
-                <th className="px-5 py-3.5 text-center">Giảm giá</th>
+                <th
+                  className="px-5 py-3.5 text-center cursor-pointer select-none hover:text-gray-600"
+                  onClick={() => toggleSort("discount_percent")}
+                >
+                  Giảm giá {sortField === "discount_percent" ? (sortDir === "desc" ? "↓" : "↑") : "↕"}
+                </th>
                 <th className="px-5 py-3.5 text-center">Hành động</th>
               </tr>
             </thead>
@@ -147,20 +179,6 @@ export default function RestaurantList() {
                   <td className="px-5 py-4 text-sm text-gray-500">
                     {r.location?.name || "—"}
                   </td>
-                  <td className="px-5 py-4 text-right text-sm font-medium text-gray-700">
-                    {r.min_price && r.max_price ? (
-                      <>
-                        {/* Math.floor để đảm bảo không còn số lẻ .00 trước khi định dạng */}
-                        {Math.floor(r.min_price).toLocaleString("vi-VN")} -{" "}
-                        {Math.floor(r.max_price).toLocaleString("vi-VN")}
-                        <span className="ml-1 text-[10px] text-gray-400 font-normal">
-                          VNĐ
-                        </span>
-                      </>
-                    ) : (
-                      <span className="text-gray-300">—</span>
-                    )}
-                  </td>
                   <td className="px-5 py-4 text-center text-sm">
                     {r.rating ? (
                       <span className="font-bold text-yellow-500">
@@ -174,6 +192,20 @@ export default function RestaurantList() {
                         ({r.reviews_count})
                       </span>
                     ) : null}
+                  </td>
+                  <td className="px-5 py-4 text-right text-sm font-medium text-gray-700">
+                    {r.min_price && r.max_price ? (
+                      <>
+                        {/* Math.floor để đảm bảo không còn số lẻ .00 trước khi định dạng */}
+                        {Math.floor(r.min_price).toLocaleString("vi-VN")} -{" "}
+                        {Math.floor(r.max_price).toLocaleString("vi-VN")}
+                        <span className="ml-1 text-[10px] text-gray-400 font-normal">
+                          VNĐ
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-gray-300">—</span>
+                    )}
                   </td>
                   <td className="px-5 py-4 text-center">
                     {r.discount_percent ? (

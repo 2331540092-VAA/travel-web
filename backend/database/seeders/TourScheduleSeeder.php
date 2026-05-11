@@ -15,10 +15,24 @@ class TourScheduleSeeder extends Seeder
     {
         $now = Carbon::now();
 
-        // Xóa dữ liệu cũ để tránh trùng lặp nếu bạn chạy lệnh seed nhiều lần
-        // DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        // DB::table('tour_schedules')->truncate();
-        // DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        DB::table('tour_schedules')->truncate();
+
+        $tourNameByLegacyId = [
+            1 => 'Tour Đà Nẵng 3N2Đ: Đường lên Tiên Cảnh',
+            2 => 'Tour Hà Nội: Hào khí Thăng Long',
+            3 => 'Tour Bangkok - Pattaya: Xứ sở Chùa Vàng',
+            4 => 'Tour Singapore: Đảo quốc Sư Tử',
+            5 => 'Tour Bali: Thiên đường nhiệt đới',
+            6 => 'Tour Tokyo: Hiện đại và Truyền thống',
+            7 => 'Tour Seoul - Nami: Bản tình ca mùa đông',
+            8 => 'Tour Bắc Kinh: Vẻ đẹp vĩnh cửu',
+            9 => 'Tour Lào: Đất nước Triệu Voi',
+            10 => 'Tour Campuchia: Bí ẩn Angkor',
+            11 => 'Tour Vịnh Hạ Long: Du thuyền giữa Kỳ Quan',
+            12 => 'Tour Phuket 4N3Đ: Biển Andaman Rực Nắng',
+            13 => 'Tour Kyoto 4N3Đ: Nét Đẹp Cố Đô Nhật Bản',
+            14 => 'Tour Jeju 4N3Đ: Đảo Tình Yêu Gió Biển',
+        ];
 
         $schedules = [
             // TOUR 1: Đà Nẵng 3N2Đ
@@ -87,10 +101,41 @@ class TourScheduleSeeder extends Seeder
             ['tour_id' => 11, 'day_number' => 1, 'time' => 'Chiều', 'title' => 'Du thuyền', 'activity' => 'Tham quan hang, kayak'],
             ['tour_id' => 11, 'day_number' => 1, 'time' => 'Tối', 'title' => 'Trải nghiệm', 'activity' => 'Câu mực, tiệc tối'],
             ['tour_id' => 11, 'day_number' => 2, 'time' => 'Sáng', 'title' => 'Kết thúc', 'activity' => 'Về Hà Nội'],
+
+            // TOUR 12: Phuket 4N3Đ
+            ['tour_id' => 12, 'day_number' => 1, 'time' => 'Sáng', 'title' => 'Bay', 'activity' => 'TP.HCM → Phuket, nhận phòng'],
+            ['tour_id' => 12, 'day_number' => 2, 'time' => 'Cả ngày', 'title' => 'Khám phá đảo', 'activity' => 'Phố cổ Phuket, biển Patong, mua sắm'],
+            ['tour_id' => 12, 'day_number' => 3, 'time' => 'Chiều', 'title' => 'Ngắm hoàng hôn', 'activity' => 'Promthep Cape, ăn tối hải sản'],
+            ['tour_id' => 12, 'day_number' => 4, 'time' => 'Sáng', 'title' => 'Kết thúc', 'activity' => 'Tự do, ra sân bay về Việt Nam'],
+
+            // TOUR 13: Kyoto 4N3Đ
+            ['tour_id' => 13, 'day_number' => 1, 'time' => 'Sáng', 'title' => 'Bay', 'activity' => 'Hà Nội → Kyoto, nhận phòng'],
+            ['tour_id' => 13, 'day_number' => 2, 'time' => 'Cả ngày', 'title' => 'Cố đô', 'activity' => 'Fushimi Inari, Kinkaku-ji, Gion'],
+            ['tour_id' => 13, 'day_number' => 3, 'time' => 'Chiều', 'title' => 'Arashiyama', 'activity' => 'Rừng tre, phố cổ, ẩm thực địa phương'],
+            ['tour_id' => 13, 'day_number' => 4, 'time' => 'Sáng', 'title' => 'Kết thúc', 'activity' => 'Mua sắm nhẹ, về Việt Nam'],
+
+            // TOUR 14: Jeju 4N3Đ
+            ['tour_id' => 14, 'day_number' => 1, 'time' => 'Sáng', 'title' => 'Bay', 'activity' => 'TP.HCM → Jeju, nhận phòng'],
+            ['tour_id' => 14, 'day_number' => 2, 'time' => 'Cả ngày', 'title' => 'Thiên nhiên Jeju', 'activity' => 'Seongsan Ilchulbong, cung đường ven biển'],
+            ['tour_id' => 14, 'day_number' => 3, 'time' => 'Chiều', 'title' => 'Văn hóa địa phương', 'activity' => 'Làng dân gian, mua sắm đặc sản quýt'],
+            ['tour_id' => 14, 'day_number' => 4, 'time' => 'Sáng', 'title' => 'Kết thúc', 'activity' => 'Ra sân bay, về Việt Nam'],
         ];
 
         // Tự động thêm timestamps cho từng bản ghi
         foreach ($schedules as &$item) {
+            $legacyTourId = (int) $item['tour_id'];
+            $tourName = $tourNameByLegacyId[$legacyTourId] ?? null;
+
+            if (!$tourName) {
+                throw new \RuntimeException("Không tìm thấy mapping tour cho legacy id: {$legacyTourId}");
+            }
+
+            $actualTourId = DB::table('tours')->where('name', $tourName)->value('id');
+            if (!$actualTourId) {
+                throw new \RuntimeException("Không tìm thấy tour '{$tourName}' trong bảng tours");
+            }
+
+            $item['tour_id'] = (int) $actualTourId;
             $item['created_at'] = $now;
             $item['updated_at'] = $now;
         }

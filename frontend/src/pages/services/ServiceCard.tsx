@@ -8,6 +8,8 @@ interface BaseService {
   rating?: number;
   price_per_night?: number;
   avg_price?: number;
+  min_price?: number;
+  max_price?: number;
   discount_percent?: number;
   is_promotion?: boolean;
   promotion_end?: string;
@@ -21,6 +23,9 @@ interface Props {
 export default function ServiceCard({ data, type }: Props) {
   // 👉 Chuẩn hóa giá
   const price = type === "hotel" ? data.price_per_night : data.avg_price;
+  const restMin = data.min_price;
+  const restMax = data.max_price;
+  const hasRestPrice = !!(restMin && restMax);
 
   return (
     <Link
@@ -91,7 +96,7 @@ export default function ServiceCard({ data, type }: Props) {
           </p>
 
           {/* PRICE Section */}
-          {price ? (
+          {(type === "hotel" ? !!price : (hasRestPrice || !!price)) ? (
             <div className="space-y-1">
               {/* Giá cũ (nếu có khuyến mãi) */}
               {data.is_promotion &&
@@ -101,7 +106,9 @@ export default function ServiceCard({ data, type }: Props) {
                   <span className="text-slate-400 line-through text-sm decoration-slate-400 decoration-1">
                     {type === "hotel"
                       ? `${Number(price).toLocaleString()} VND`
-                      : `${(Number(price) * 0.8).toLocaleString()} - ${Number(price).toLocaleString()} VND`}
+                      : hasRestPrice
+                      ? `${Number(restMin).toLocaleString()} - ${Number(restMax).toLocaleString()} VND`
+                      : `${Number(price).toLocaleString()} VND`}
                   </span>
                 </div>
               ) : null}
@@ -113,9 +120,14 @@ export default function ServiceCard({ data, type }: Props) {
                   data.discount_percent &&
                   data.discount_percent > 0
                     ? type === "hotel"
-                      ? `${(Number(price) * (1 - data.discount_percent / 100)).toLocaleString()} VND`
-                      : // Hiển thị dải giá cho Restaurant giống ảnh
-                        `${(Number(price) * 0.7).toLocaleString()} - ${(Number(price) * (1 - data.discount_percent / 100)).toLocaleString()} VND`
+                      ? `${Math.round(Number(price) * (1 - data.discount_percent / 100)).toLocaleString()} VND`
+                      : hasRestPrice
+                      ? `${Math.round(Number(restMin) * (1 - data.discount_percent / 100)).toLocaleString()} - ${Math.round(Number(restMax) * (1 - data.discount_percent / 100)).toLocaleString()} VND`
+                      : `${Math.round(Number(price) * (1 - data.discount_percent / 100)).toLocaleString()} VND`
+                    : type === "hotel"
+                    ? `${Number(price).toLocaleString()} VND`
+                    : hasRestPrice
+                    ? `${Number(restMin).toLocaleString()} - ${Number(restMax).toLocaleString()} VND`
                     : `${Number(price).toLocaleString()} VND`}
                 </span>
 

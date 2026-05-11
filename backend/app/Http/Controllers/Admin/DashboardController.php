@@ -46,7 +46,7 @@ class DashboardController extends Controller
             ],
         ];
 
-        $totalRevenue = Booking::where('status', '!=', 'cancelled')
+        $totalRevenue = Booking::where('status', 'paid')
             ->sum('total_amount');
 
         $revenue = number_format($totalRevenue, 0, ',', '.') . ' VNĐ';

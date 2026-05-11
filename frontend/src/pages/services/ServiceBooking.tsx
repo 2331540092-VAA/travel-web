@@ -29,7 +29,8 @@ export default function ServiceBooking() {
   const [loading, setLoading] = useState(false);
   const [quantity, setQuantity] = useState(1); // Số phòng/bàn
   const [people, setPeople] = useState(1); // Số người
-  const [unitPrice, setUnitPrice] = useState(0); // Giá 1 phòng/bàn
+  const [unitPrice, setUnitPrice] = useState(0); // Giá gốc 1 phòng/bàn
+  const [discountPercent, setDiscountPercent] = useState(0); // % giảm giá của phòng/bàn
   const [total, setTotal] = useState(0); // Tổng tiền
   const [service, setService] = useState<Record<string, unknown>>({}); // Thông tin dịch vụ
   const [maxPeople, setMaxPeople] = useState<number | null>(null); // Sức chứa tối đa (tính theo số phòng/bàn)
@@ -56,12 +57,17 @@ export default function ServiceBooking() {
         try {
           const res = await fetch(serviceUrl);
           const data = await res.json();
-          setService(data.data ?? data);
+          const serviceData = data.data ?? data;
+          setService(serviceData);
+          // Hotel: l\u01b0u discount c\u1ea5p hotel \u0111\u1ec3 d\u00f9ng cho ph\u00f2ng
+          if (type === "hotel") {
+            setDiscountPercent(Number(serviceData.discount_percent || 0));
+          }
         } catch {
           setService({});
         }
       }
-      // Lấy giá dịch vụ theo item_id
+      // L\u1ea5y gi\u00e1 d\u1ecbch v\u1ee5 theo item_id
       let url = "";
       if (type === "hotel" && itemId) {
         url = `${import.meta.env.VITE_API_BASE ? import.meta.env.VITE_API_BASE + '/api' : 'http://127.0.0.1:8000/api'}/hotels/${id}/rooms`;
@@ -78,6 +84,10 @@ export default function ServiceBooking() {
           );
           if (found) {
             setUnitPrice(Number(found.price_per_night || found.price || 0));
+            // Restaurant: d\u00f9ng discount c\u1ee7a t\u1eebng b\u00e0n; Hotel: \u0111\u00e3 set \u1edf tr\u00ean (hotel-level)
+            if (type === "restaurant") {
+              setDiscountPercent(Number(found.discount_percent || 0));
+            }
             setCapacityPerItem(Number(found.capacity) || null);
             setMaxPeople(Number(found.capacity) || null);
             setMaxQuantity(Number(found.quantity) || null);
@@ -90,14 +100,22 @@ export default function ServiceBooking() {
     fetchServiceAndPrice();
   }, [id, type, itemId]);
 
+  // Giá sau giảm
+  const finalUnitPrice = discountPercent > 0
+    ? Math.round(unitPrice * (1 - discountPercent / 100))
+    : unitPrice;
+
   // Tính tổng tiền
   useEffect(() => {
+    const fp = discountPercent > 0
+      ? Math.round(unitPrice * (1 - discountPercent / 100))
+      : unitPrice;
     if (type === "hotel") {
-      setTotal(unitPrice * quantity * nights);
+      setTotal(fp * quantity * nights);
     } else {
-      setTotal(unitPrice * quantity);
+      setTotal(fp * quantity);
     }
-  }, [unitPrice, quantity, nights, type]);
+  }, [unitPrice, discountPercent, quantity, nights, type]);
 
   const submit = async () => {
     setError("");
@@ -226,7 +244,7 @@ export default function ServiceBooking() {
                       onChange={(e) => setCheckOut(e.target.value)}
                       disabled={loading}
                     />
-                    <p className="text-xs text-blue-600 mt-1 font-medium">{nights} đêm × {unitPrice.toLocaleString()} VND = {(unitPrice * nights * quantity).toLocaleString()} VND</p>
+                    <p className="text-xs text-blue-600 mt-1 font-medium">{nights} đêm × {finalUnitPrice.toLocaleString()} VND = {(finalUnitPrice * nights * quantity).toLocaleString()} VND</p>
                   </div>
                 )}
 
@@ -271,10 +289,25 @@ export default function ServiceBooking() {
               <p className="text-xs text-gray-500 uppercase font-semibold mb-1">
                 Đơn giá cơ bản
               </p>
-              <span className="text-2xl font-bold text-gray-800">
-                {unitPrice.toLocaleString()}{" "}
-                <small className="text-sm font-normal">VND</small>
-              </span>
+              {discountPercent > 0 ? (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-sm text-slate-400 line-through">
+                    {unitPrice.toLocaleString()} VND
+                  </span>
+                  <span className="text-2xl font-bold text-red-600">
+                    {finalUnitPrice.toLocaleString()}{" "}
+                    <small className="text-sm font-normal">VND</small>
+                  </span>
+                  <span className="text-xs font-bold text-red-500 bg-red-50 px-1.5 py-0.5 rounded">
+                    -{discountPercent}%
+                  </span>
+                </div>
+              ) : (
+                <span className="text-2xl font-bold text-gray-800">
+                  {unitPrice.toLocaleString()}{" "}
+                  <small className="text-sm font-normal">VND</small>
+                </span>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4 mb-6">

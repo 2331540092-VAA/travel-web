@@ -144,7 +144,7 @@ const BookingDetail: React.FC = () => {
         </span>
       ),
     },
-    { label: "Hình thức thanh toán", value: booking.payment_type || "—" },
+    { label: "Hình thức thanh toán", value: booking.payment_type === 'full' ? 'Thanh toán đầy đủ' : (booking.payment_type || '—') },
     { label: "Ghi chú từ khách", value: booking.note || "Không có" },
   ];
 

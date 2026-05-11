@@ -22,9 +22,11 @@
         td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; font-size: 11px; }
         tr:last-child td { border-bottom: none; }
         .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; }
-        .badge-paid { background: #dcfce7; color: #16a34a; }
+        .badge-paid { background: #dbeafe; color: #2563eb; }
         .badge-pending { background: #fef9c3; color: #ca8a04; }
+        .badge-confirmed { background: #dcfce7; color: #16a34a; }
         .badge-cancelled { background: #fee2e2; color: #dc2626; }
+        .badge-completed { background: #cffafe; color: #0891b2; }
         .footer { margin-top: 32px; border-top: 1px solid #e2e8f0; padding-top: 12px; text-align: center; font-size: 10px; color: #94a3b8; }
         .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
         .bar-label { width: 90px; font-size: 11px; color: #475569; }
@@ -55,11 +57,11 @@
     </div>
     <div class="card green">
         <div class="label">Tổng doanh thu</div>
-        <div class="value">{{ number_format($total_revenue, 0, ',', '.') }}đ</div>
+        <div class="value">{{ number_format($total_revenue, 0, ',', '.') }} VND</div>
     </div>
     <div class="card purple">
         <div class="label">Đã thanh toán</div>
-        <div class="value">{{ number_format($paid_revenue, 0, ',', '.') }}đ</div>
+        <div class="value">{{ number_format($paid_revenue, 0, ',', '.') }} VND</div>
     </div>
 </div>
 
@@ -75,7 +77,7 @@
 <div class="bar-row">
     <div class="bar-label">{{ $labels[$row->booking_type] ?? $row->booking_type }}</div>
     <div class="bar-track"><div class="bar-fill" style="width:{{ $pct }}%"></div></div>
-    <div class="bar-val">{{ $row->count }} đơn · {{ number_format($row->revenue, 0, ',', '.') }}đ</div>
+    <div class="bar-val">{{ $row->count }} đơn · {{ number_format($row->revenue, 0, ',', '.') }} VND</div>
 </div>
 @endforeach
 @endif
@@ -87,8 +89,8 @@
     <tr><th>Trạng thái</th><th>Số đơn</th></tr>
     @foreach($by_status as $row)
     @php
-        $statusLabels = ['pending'=>'Chờ xử lý','confirmed'=>'Đã xác nhận','paid'=>'Đã thanh toán','cancelled'=>'Đã hủy'];
-        $badgeClass = ['paid'=>'badge-paid','pending'=>'badge-pending','cancelled'=>'badge-cancelled'][$row->status] ?? '';
+        $statusLabels = ['pending'=>'Chờ xử lý','confirmed'=>'Đã xác nhận','paid'=>'Đã thanh toán','cancelled'=>'Đã hủy','completed'=>'Hoàn thành'];
+        $badgeClass = ['paid'=>'badge-paid','pending'=>'badge-pending','confirmed'=>'badge-confirmed','cancelled'=>'badge-cancelled','completed'=>'badge-completed'][$row->status] ?? '';
     @endphp
     <tr>
         <td><span class="badge {{ $badgeClass }}">{{ $statusLabels[$row->status] ?? $row->status }}</span></td>
@@ -107,7 +109,7 @@
     <tr>
         <td>{{ \Carbon\Carbon::parse($row->date)->format('d/m/Y') }}</td>
         <td>{{ $row->count }}</td>
-        <td>{{ number_format($row->revenue, 0, ',', '.') }}đ</td>
+        <td>{{ number_format($row->revenue, 0, ',', '.') }} VND</td>
     </tr>
     @endforeach
 </table>

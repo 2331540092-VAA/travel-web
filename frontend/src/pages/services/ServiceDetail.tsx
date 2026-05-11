@@ -61,7 +61,7 @@ export default function ServiceDetail() {
         const data = await res.json();
         setService(data.data ?? data);
 
-        let endpoint =
+        const endpoint =
           type === "hotel"
             ? `${import.meta.env.VITE_API_BASE ? import.meta.env.VITE_API_BASE + '/api' : 'http://127.0.0.1:8000/api'}/hotels/${id}/rooms`
             : `${import.meta.env.VITE_API_BASE ? import.meta.env.VITE_API_BASE + '/api' : 'http://127.0.0.1:8000/api'}/restaurants/${id}/tables`;
@@ -92,13 +92,51 @@ export default function ServiceDetail() {
       typeof service.menu === "string"
         ? JSON.parse(service.menu)
         : service.menu || [];
-  } catch (e) {
+  } catch {
     console.log("JSON lỗi");
   }
 
   const lat = Number(service.lat);
   const lng = Number(service.lng);
   const markedIcon = getIconByType("marked");
+
+  // Tính khoảng giá tiêu đề từ dữ liệu thực tế
+  // Hotel: dùng hotel.discount_percent áp đồng đều cho tất cả phòng
+  // Restaurant: dùng restaurant.discount_percent áp lên giá menu
+  const hotelDiscount = type === "hotel" ? (service.discount_percent ?? 0) : 0;
+
+  const roomPrices =
+    type === "hotel" && items.length > 0
+      ? items
+          .map((r) => {
+            const p = Number(r.price_per_night || 0);
+            return hotelDiscount > 0 ? Math.round(p * (1 - hotelDiscount / 100)) : p;
+          })
+          .filter((p) => p > 0)
+      : [];
+
+  const menuPrices =
+    type === "restaurant" && menu.length > 0
+      ? menu.map((m) => Number(m.price || 0)).filter((p) => p > 0)
+      : [];
+
+  const headerMin =
+    type === "hotel"
+      ? roomPrices.length > 0
+        ? Math.min(...roomPrices)
+        : Number(service.price_per_night || 0)
+      : menuPrices.length > 0
+      ? Math.min(...menuPrices)
+      : Number(service.min_price || 0);
+
+  const headerMax =
+    type === "hotel"
+      ? roomPrices.length > 0
+        ? Math.max(...roomPrices)
+        : Number(service.price_per_night || 0)
+      : menuPrices.length > 0
+      ? Math.max(...menuPrices)
+      : Number(service.max_price || 0);
 
   return (
     // 1. THÊM NỀN XANH NHẠT TOÀN TRANG
@@ -169,32 +207,63 @@ export default function ServiceDetail() {
             )}
           </div>
 
-          {/* GIÁ: CHỈNH THEO MẪU ẢNH (Bỏ icon túi tiền) */}
+          {/* GIÁ: tính từ phòng/menu thực tế */}
           <div className="mb-10 pb-8 border-b border-slate-100">
-            {service.is_promotion && (service.discount_percent ?? 0) > 0 ? (
+            {type === "hotel" ? (
+              // Hotel: hiển thị khoảng giá phòng sau hotel-level discount
+              hotelDiscount > 0 ? (
+                <div className="space-y-1">
+                  <p className="text-slate-400 line-through text-lg font-medium">
+                    {roomPrices.length > 0 && items.length > 0
+                      ? `${Math.min(...items.map(r => Number(r.price_per_night || 0))).toLocaleString()} – ${Math.max(...items.map(r => Number(r.price_per_night || 0))).toLocaleString()} VND / đêm`
+                      : `${Number(service.price_per_night || 0).toLocaleString()} VND / đêm`}
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <p className="text-3xl font-black text-red-500">
+                      {roomPrices.length > 0
+                        ? roomPrices.length > 1 && Math.min(...roomPrices) !== Math.max(...roomPrices)
+                          ? `${Math.min(...roomPrices).toLocaleString()} – ${Math.max(...roomPrices).toLocaleString()} VND / đêm`
+                          : `${Math.min(...roomPrices).toLocaleString()} VND / đêm`
+                        : `${Math.round(Number(service.price_per_night || 0) * (1 - hotelDiscount / 100)).toLocaleString()} VND / đêm`}
+                    </p>
+                    <span className="bg-red-100 text-red-500 px-2 py-1 rounded-lg text-xs font-bold">
+                      -{hotelDiscount}%
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-3xl font-black text-red-500">
+                  {roomPrices.length > 1 && Math.min(...roomPrices) !== Math.max(...roomPrices)
+                    ? `${Math.min(...roomPrices).toLocaleString()} – ${Math.max(...roomPrices).toLocaleString()} VND / đêm`
+                    : roomPrices.length > 0
+                    ? `${roomPrices[0].toLocaleString()} VND / đêm`
+                    : `${Number(service.price_per_night || 0).toLocaleString()} VND / đêm`}
+                </p>
+              )
+            ) : service.is_promotion && (service.discount_percent ?? 0) > 0 ? (
+              // Restaurant có khuyến mãi: áp discount lên dải giá menu
               <div className="space-y-1">
                 <p className="text-slate-400 line-through text-lg font-medium">
-                  {type === "hotel"
-                    ? `${Number(service.price_per_night).toLocaleString()} VND`
-                    : `${Number(service.min_price).toLocaleString()} - ${Number(service.max_price).toLocaleString()} VND`}
+                  {headerMin.toLocaleString()} – {headerMax.toLocaleString()} VND
                 </p>
                 <div className="flex items-center gap-3">
                   <p className="text-3xl font-black text-red-500">
-                    {type === "hotel"
-                      ? `${(Number(service.price_per_night) * (1 - (service.discount_percent ?? 0) / 100)).toLocaleString()} VND`
-                      : `${(Number(service.min_price) * (1 - (service.discount_percent ?? 0) / 100)).toLocaleString()} - ${(Number(service.max_price) * (1 - (service.discount_percent ?? 0) / 100)).toLocaleString()} VND`}
+                    {Math.round(headerMin * (1 - (service.discount_percent ?? 0) / 100)).toLocaleString()} – {Math.round(headerMax * (1 - (service.discount_percent ?? 0) / 100)).toLocaleString()} VND
                   </p>
                   <span className="bg-red-100 text-red-500 px-2 py-1 rounded-lg text-xs font-bold">
                     -{service.discount_percent}%
                   </span>
                 </div>
+                <p className="text-sm text-slate-400 mt-1">Khoảng giá món ăn sau ưu đãi</p>
               </div>
             ) : (
-              <p className="text-3xl font-black text-red-500">
-                {type === "hotel"
-                  ? `${Number(service.price_per_night).toLocaleString()} VND / đêm`
-                  : `${Number(service.min_price).toLocaleString()} - ${Number(service.max_price).toLocaleString()} VND`}
-              </p>
+              // Restaurant không khuyến mãi: dải giá menu
+              <div>
+                <p className="text-3xl font-black text-red-500">
+                  {headerMin.toLocaleString()} – {headerMax.toLocaleString()} VND
+                </p>
+                <p className="text-sm text-slate-400 mt-1">Khoảng giá món ăn</p>
+              </div>
             )}
           </div>
 
@@ -234,17 +303,38 @@ export default function ServiceDetail() {
                 Thực đơn
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {menu.map((m, i) => (
-                  <div
-                    key={i}
-                    className="bg-slate-50 border border-slate-100 p-4 rounded-2xl flex justify-between items-center"
-                  >
-                    <span className="font-bold text-slate-700">{m.name}</span>
-                    <span className="font-black text-red-500">
-                      {Number(m.price).toLocaleString()}đ
-                    </span>
-                  </div>
-                ))}
+                {menu.map((m, i) => {
+                  const origPrice = Number(m.price);
+                  const restDiscount = service.discount_percent ?? 0;
+                  const discountedPrice =
+                    restDiscount > 0
+                      ? Math.round(origPrice * (1 - restDiscount / 100))
+                      : null;
+                  return (
+                    <div
+                      key={i}
+                      className="bg-slate-50 border border-slate-100 p-4 rounded-2xl flex justify-between items-center"
+                    >
+                      <span className="font-bold text-slate-700">{m.name}</span>
+                      <div className="flex flex-col items-end">
+                        {discountedPrice !== null ? (
+                          <>
+                            <span className="text-xs text-slate-400 line-through">
+                              {origPrice.toLocaleString()}đ
+                            </span>
+                            <span className="font-black text-red-500">
+                              {discountedPrice.toLocaleString()}đ
+                            </span>
+                          </>
+                        ) : (
+                          <span className="font-black text-red-500">
+                            {origPrice.toLocaleString()}đ
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -274,12 +364,31 @@ export default function ServiceDetail() {
                     )}
                   </div>
                   <div className="flex flex-col items-end justify-center">
-                    <p className="text-2xl font-black text-slate-900 mb-3">
-                      {Number(
-                        type === "hotel" ? item.price_per_night : item.price,
-                      ).toLocaleString()}
-                      đ
-                    </p>
+                    {( (type === "hotel" && hotelDiscount > 0) || (type === "restaurant" && item.discount_percent && item.discount_percent > 0) ) ? (
+                      <>
+                        <p className="text-sm text-slate-400 line-through mb-0.5">
+                          {Number(
+                            type === "hotel" ? item.price_per_night : item.price,
+                          ).toLocaleString()}đ
+                        </p>
+                        <p className="text-2xl font-black text-red-500 mb-1">
+                          {Math.round(
+                            Number(type === "hotel" ? item.price_per_night : item.price) *
+                              (1 - (type === "hotel" ? hotelDiscount : (item.discount_percent ?? 0)) / 100),
+                          ).toLocaleString()}đ
+                        </p>
+                        <span className="text-xs font-bold text-red-500 bg-red-50 px-1.5 py-0.5 rounded mb-3">
+                          -{type === "hotel" ? hotelDiscount : item.discount_percent}%
+                        </span>
+                      </>
+                    ) : (
+                      <p className="text-2xl font-black text-slate-900 mb-3">
+                        {Number(
+                          type === "hotel" ? item.price_per_night : item.price,
+                        ).toLocaleString()}
+                        đ
+                      </p>
+                    )}
                     <Link
                       to={`/services/${type}/${id}/book?item_id=${item.id}`}
                       className="bg-blue-600 text-white px-8 py-3 rounded-2xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-100 transition-all active:scale-95"

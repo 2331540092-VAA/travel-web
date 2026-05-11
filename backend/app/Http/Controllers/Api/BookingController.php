@@ -51,6 +51,7 @@ class BookingController extends Controller
                 'booking_date' => $request->booking_date,
                 'quantity' => $request->quantity,
                 'total_amount' => $request->total_amount,
+                'payment_type' => 'full',
                 'note' => $request->note,
             ];
 

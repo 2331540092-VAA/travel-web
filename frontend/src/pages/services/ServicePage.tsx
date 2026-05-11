@@ -10,6 +10,8 @@ interface Service {
   rating?: number;
   price_per_night?: number;
   avg_price?: number;
+  min_price?: number;
+  max_price?: number;
   discount_percent?: number;
   is_promotion?: boolean;
   promotion_end?: string;
@@ -17,7 +19,6 @@ interface Service {
 
 interface RawService extends Service {
   image?: string;
-  min_price?: number;
 }
 
 export default function ServicePage() {
